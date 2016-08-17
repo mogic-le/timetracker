@@ -1,53 +1,20 @@
-version: '3.5'
-services:
+web:
+  build: .
+  links:
+    - db
+  ports:
+    - "127.0.0.1:6300:80"
 
-  app:
-    build: .
-    image: netresearch/timetracker
-    volumes:
-      - app-cache:/var/www/html/app/cache
-      - app-logs:/var/www/html/app/logs
-      - ./app/config/parameters.yml:/var/www/html/app/config/parameters.yml
-    links:
-      - db:db
-    restart: always
-    environment:
-      - TRUSTED_PROXY_ALL
-      - TRUSTED_PROXY_LIST
-
-
-  httpd:
-    image: nginx:alpine
-    volumes:
-      - app-pub:/var/www/html/web
-      - ./nginx-conf.d-default.conf:/etc/nginx/conf.d/default.conf
-    links:
-      - app:phpfpm
-    restart: always
-
-  db:
-    image: mariadb
-    environment:
-      - MYSQL_ROOT_PASSWORD=global123
-      - MYSQL_USER=global
-      - MYSQL_PASSWORD=global
-      - MYSQL_DATABASE=timetracker
-    volumes:
-      - db-data:/var/lib/mysql
-    restart: always
-
-networks:
-
-  default:
-    driver: "bridge"
-
-volumes:
-
-  app-cache:
-    driver: local
-
-  app-logs:
-    driver: local
-
-  db-data:
-    driver: local
+db:
+  image: 'mariadb'
+  ports:
+    - '127.0.0.1:6301:3306'
+  environment:
+    - MYSQL_ROOT_PASSWORD=timetracker
+    - MYSQL_DATABASE=timetracker
+    - MYSQL_USER=timetracker
+    - MYSQL_PASSWORD=timetracker
+    - VIRTUAL_HOST=timetracker.local
+    - VIRTUAL_PORT=5649
+  volumes:
+    - ./sql/full.sql:/docker-entrypoint-initdb.d/timetracker_setup.sql:ro
