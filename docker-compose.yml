@@ -1,0 +1,20 @@
+web:
+  build: .
+  links:
+    - db
+  ports:
+    - "127.0.0.1:6300:80"
+
+db:
+  image: 'mariadb'
+  ports:
+    - '127.0.0.1:6301:3306'
+  environment:
+    - MYSQL_ROOT_PASSWORD=timetracker
+    - MYSQL_DATABASE=timetracker
+    - MYSQL_USER=timetracker
+    - MYSQL_PASSWORD=timetracker
+    - VIRTUAL_HOST=timetracker.local
+    - VIRTUAL_PORT=5649
+  volumes:
+    - ./sql/full.sql:/docker-entrypoint-initdb.d/timetracker_setup.sql:ro
