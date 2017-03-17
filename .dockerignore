@@ -3,10 +3,8 @@
 .project
 .settings
 app/build/
-app/config/parameters.yml
 app/cache/*
 app/logs/*.log
 bin/*
 vendor/*
-web/.htaccess
 web/bundles/*
