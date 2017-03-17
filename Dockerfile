@@ -37,9 +37,9 @@ RUN a2ensite timetracker.conf\
 RUN mkdir -p /var/www/html/
 ADD ./ /var/www/html/
 RUN ln -s /var/www/html/web/app.php /var/www/html/web/index.php\
-    && cd /var/www/html/\
-    && /usr/bin/composer install\
-    && chown -R www-data:www-data /var/www
+    && cd /var/www/html/ && composer install\
+    && chown -R www-data:www-data /var/www\
+    && test -d /var/www/html/timalytics && (cd /var/www/html/timalytics && composer install)
 
 EXPOSE 80
 
