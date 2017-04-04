@@ -13,6 +13,7 @@ RUN usermod -u 1000 www-data\
         curl\
         git-core\
         libapache2-mod-php5\
+        locales\
         php5-curl\
         php5-intl\
         php5-json\
@@ -24,7 +25,9 @@ RUN usermod -u 1000 www-data\
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*\
     && a2enmod rewrite\
     && curl --output /usr/bin/composer https://getcomposer.org/composer.phar\
-    && chmod 0755 /usr/bin/composer
+    && chmod 0755 /usr/bin/composer\
+    && echo 'de_DE.UTF-8 UTF-8' > /etc/locale.gen\
+    && locale-gen de_DE.UTF-8
 
 # apache2 conf
 COPY docker/web/timetracker.conf /etc/apache2/sites-available/timetracker.conf
