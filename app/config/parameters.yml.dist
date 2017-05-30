@@ -28,3 +28,5 @@ parameters:
     app_monthly_overview_url: "https://stats.timetracker.nr/?user="
     app_title:                "Netresearch TimeTracker"
     app_header_url:           "https://www.netresearch.de/corpnav-intern/zeiterfassung/"
+
+    app_show_billable_field_in_export: false

@@ -55,14 +55,22 @@ class ControllingController extends BaseController
                 'entry.start' => true,
             )
         );
+
+        $showBillable = $this->container->getParameter('app_show_billable_field_in_export');
+
+        if ($showBillable) {
+            $entries = $service->enrichEntriesWithBillableInformation($this->_getUserId($request), $entries);
+        }
+
         $username = $service->getUsername($userId);
 
 
         $content = $this->get('templating')->render(
             'NetresearchTimeTrackerBundle:Default:export.csv.twig',
             array(
-                'entries' => $entries,
-                'labels'  => $service->getLabelsForSingleColumns(),
+                'entries'   => $entries,
+                'labels'    => $service->getLabelsForSingleColumns(),
+                'showbillable'  => $showBillable
             )
         );
 
