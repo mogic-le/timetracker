@@ -43,13 +43,14 @@ class ControllingController extends BaseController
             return $this->getFailedLoginResponse();
         }
 
-        $userId = $request->get('userid');
-        $year   = $request->get('year');
-        $month  = $request->get('month');
+        $projectid = $request->get('project');
+        $userId    = $request->get('userid');
+        $year      = $request->get('year');
+        $month     = $request->get('month');
 
         $service = $this->get('nr.timetracker.export');
         $entries = $service->exportEntries(
-            $userId, $year, $month, array(
+            $userId, $year, $month, $projectid, array(
                 'user.username'  => true,
                 'entry.day'   => true,
                 'entry.start' => true,

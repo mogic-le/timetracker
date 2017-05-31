@@ -11,12 +11,14 @@ Ext.define('Netresearch.widget.Controlling', {
     ],
 
 	userStore: Ext.create('Netresearch.store.AdminUsers'),
+	projectStore: Ext.create('Netresearch.store.AdminProjects'),
 
     curYear: new Date().getFullYear(),
 
     /* Strings */
     _monthlyStatement: 'Monthly statement',
     _userTitle: 'User',
+    _projectTitle: 'Project',
     _yearTitle: 'Year',
     _monthTitle: 'Month',
     _exportTitle: 'Export',
@@ -75,6 +77,19 @@ Ext.define('Netresearch.widget.Controlling', {
                 anchor: '100%',
                 value: ''
             }, {
+                id: 'cnt-project',
+                xtype: 'combo',
+                store: this.projectStore,
+                mode: 'local',
+                fieldLabel: this._projectTitle,
+                name: 'project',
+                labelWidth: 100,
+                width: 260,
+                valueField: 'id',
+                displayField: 'name',
+                anchor: '100%',
+                value: ''
+            }, {
                 id: 'cnt-year',
                 xtype: 'combo',
                 store: yearStore,
@@ -106,7 +121,8 @@ Ext.define('Netresearch.widget.Controlling', {
                     var user = Ext.getCmp("cnt-user").value;
                     var year = parseInt(Ext.getCmp("cnt-year").value);
                     var month = parseInt(Ext.getCmp("cnt-month").value);
-                    this.exportEntries(user, year, month);
+                    var project = parseInt(Ext.getCmp("cnt-project").value);
+                    this.exportEntries(user, year, month, project);
                 }
             }]
         });
@@ -131,14 +147,19 @@ Ext.define('Netresearch.widget.Controlling', {
         this.callParent();
     },
 
-    exportEntries: function(user, year, month) {
-        if ((undefined == user) || (null == user) || ('' == user) || (1 > user))
+    exportEntries: function(user, year, month, project) {
+        if ((undefined == user) || (null == user) || ('' == user) || (1 > user)) {
             user = 0;
-        window.location.href = 'controlling/export/' + user + '/' + year + '/' + month;
+        }
+        if ((undefined == project) || (null == project) || ('' == project) || (1 > project)) {
+            project = 0;
+        }
+        window.location.href = 'controlling/export/' + user + '/' + year + '/' + month + '/' + project;
     },
 
     refreshStores: function () {
         this.userStore.load();
+        this.projectStore.load();
     }
 
 });
@@ -147,6 +168,7 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'de')) {
     Ext.apply(Netresearch.widget.Controlling.prototype, {
         _monthlyStatement: 'Monats-Abrechnung',
         _userTitle: 'Mitarbeiter',
+        _projectTitle: 'Projekt',
         _yearTitle: 'Jahr',
         _monthTitle: 'Monat',
         _exportTitle: 'Exportieren',

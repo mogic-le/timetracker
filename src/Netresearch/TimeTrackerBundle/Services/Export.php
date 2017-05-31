@@ -115,22 +115,23 @@ class Export
     /**
      * Returns entries filtered and ordered.
      *
-     * @param integer $userId Filter entries by user
-     * @param integer $year   Filter entries by year
-     * @param integer $month  Filter entries by month
-     * @param array   $arSort Sort result by given fields
+     * @param integer $userId     Filter entries by user
+     * @param integer $year       Filter entries by year
+     * @param integer $month      Filter entries by month
+     * @param integer $projectId  Filter entries by project
+     * @param array   $arSort     Sort result by given fields
      *
      * @return mixed
      */
-    public function exportEntries($userId,$year, $month, array $arSort = null)
+    public function exportEntries($userId, $year, $month, $projectId, array $arSort = null)
     {
-        $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo($userId, $year, $month);
+        $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo($userId, $year, $month, $projectId);
         if (0 < count($entriesRequireAdditionalInformation)) {
             $this->extractTicketSystems($entriesRequireAdditionalInformation);
             $this->fetchAdditionalInfoFromExternalJira();
         }
 
-        return $this->getEnrichedEntries($userId, $year, $month, $arSort);
+        return $this->getEnrichedEntries($userId, $year, $month, $projectId, $arSort);
     }
 
 
@@ -162,16 +163,17 @@ class Export
      * Returns entries which require additional information from external ticket
      * systems.
      *
-     * @param integer $userId Filter entries by user
-     * @param integer $year   Filter entries by year
-     * @param integer $month  Filter entries by month
+     * @param integer $userId    Filter entries by user
+     * @param integer $year      Filter entries by year
+     * @param integer $month     Filter entries by month
+     * @param integer $projectId Filter entries by project
      *
      * @return array[]
      */
-    protected function getEntriesRequireAddInfo($userId, $year, $month)
+    protected function getEntriesRequireAddInfo($userId, $year, $month, $projectId)
     {
         $arEntries = $this->getEntryRepository()->findByMonthWithExternalInformation(
-            $userId, $year, $month
+            $userId, $year, $month, $projectId
         );
 
         foreach ($arEntries as $arEntry) {
@@ -367,18 +369,19 @@ class Export
      * Returns filtered and ordered work log entries enriched with additional
      * data from external ticket systems.
      *
-     * @param integer $userId Filter entries by user
-     * @param integer $year   Filter entries by year
-     * @param integer $month  Filter entries by month
-     * @param array   $arSort Sort result by given fields
+     * @param integer $userId    Filter entries by user
+     * @param integer $year      Filter entries by year
+     * @param integer $month     Filter entries by month
+     * @param integer $projectId Filter entries by project
+     * @param array   $arSort    Sort result by given fields
      *
      * @return \Netresearch\TimeTrackerBundle\Entity\Entry[]
      */
-    protected function getEnrichedEntries($userId, $year, $month, array $arSort = null)
+    protected function getEnrichedEntries($userId, $year, $month, $projectId, array $arSort = null)
     {
         /** @var \Netresearch\TimeTrackerBundle\Entity\Entry[] $arEntries */
         $arEntries = $this->getEntryRepository()
-            ->findByDate($userId, $year, $month, $arSort);
+            ->findByDate($userId, $year, $month, $projectId, $arSort);
 
         foreach ($arEntries as $entry) {
             if (array_key_exists($entry->getTicket(), $this->additionalInformation)
