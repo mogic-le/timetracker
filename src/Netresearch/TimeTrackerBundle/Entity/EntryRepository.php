@@ -108,15 +108,16 @@ class EntryRepository extends EntityRepository
     /**
      * get all entries of a user in a given year and month
      *
-     * @param integer $userId    Filter entries by user
-     * @param integer $year      Filter entries by year
-     * @param integer $month     Filter entries by month
-     * @param integer $projectId Filter entries by project
-     * @param array   $arSort    Sort result by given fields
+     * @param integer $userId     Filter entries by user
+     * @param integer $year       Filter entries by year
+     * @param integer $month      Filter entries by month
+     * @param integer $projectId  Filter entries by project
+     * @param integer $customerId Filter entries by customer
+     * @param array   $arSort     Sort result by given fields
      *
      * @return \Netresearch\TimeTrackerBundle\Entity\Entry[]
      */
-    public function findByDate($userId, $year, $month = null, $projectId = null, $arSort = null)
+    public function findByDate($userId, $year, $month = null, $projectId = null, $customerId = null, $arSort = null)
     {
         if (null === $arSort) {
             $arSort = array(
@@ -149,6 +150,10 @@ class EntryRepository extends EntityRepository
             $qb->andWhere('entry.project = :project_id');
             $qb->setParameter('project_id', $projectId, \PDO::PARAM_INT);
         }
+        if (0 < (int) $customerId) {
+            $qb->andWhere('entry.customer = :customer_id');
+            $qb->setParameter('customer_id', $customerId, \PDO::PARAM_INT);
+        }
 
         return $qb->getQuery()->getResult();
     }
@@ -180,14 +185,15 @@ class EntryRepository extends EntityRepository
     /**
      * Fetch information needed for the additional query calls.
      *
-     * @param integer $userId    Filter entries by user
-     * @param integer $year      Filter entries by year
-     * @param integer $month     Filter entries by month
-     * @param integer $projectId Filter entries by project
+     * @param integer $userId     Filter entries by user
+     * @param integer $year       Filter entries by year
+     * @param integer $month      Filter entries by month
+     * @param integer $projectId  Filter entries by project
+     * @param integer $customerId Filter entries by customer
      *
      * @return array
      */
-    public function findByMonthWithExternalInformation($userId, $year, $month, $projectId)
+    public function findByMonthWithExternalInformation($userId, $year, $month, $projectId, $customerId)
     {
         $pattern = $this->getDatePattern($year, $month);
         $em  = $this->getEntityManager();
@@ -209,6 +215,10 @@ class EntryRepository extends EntityRepository
         if (0 < $projectId) {
             $qb->andWhere('e.project = :project_id')
                 ->setParameter(':project_id', $projectId);
+        }
+        if (0 < $customerId) {
+            $qb->andWhere('e.customer = :customer_id')
+                ->setParameter(':customer_id', $customerId);
         }
 
         $result = $qb->getQuery()->getResult();

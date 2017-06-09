@@ -119,19 +119,22 @@ class Export
      * @param integer $year       Filter entries by year
      * @param integer $month      Filter entries by month
      * @param integer $projectId  Filter entries by project
+     * @param integer $customerId Filter entries by customer
      * @param array   $arSort     Sort result by given fields
      *
      * @return mixed
      */
-    public function exportEntries($userId, $year, $month, $projectId, array $arSort = null)
+    public function exportEntries($userId, $year, $month, $projectId, $customerId, array $arSort = null)
     {
-        $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo($userId, $year, $month, $projectId);
+        $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo(
+            $userId, $year, $month, $projectId, $customerId
+        );
         if (0 < count($entriesRequireAdditionalInformation)) {
             $this->extractTicketSystems($entriesRequireAdditionalInformation);
             $this->fetchAdditionalInfoFromExternalJira();
         }
 
-        return $this->getEnrichedEntries($userId, $year, $month, $projectId, $arSort);
+        return $this->getEnrichedEntries($userId, $year, $month, $projectId, $customerId, $arSort);
     }
 
 
@@ -163,17 +166,18 @@ class Export
      * Returns entries which require additional information from external ticket
      * systems.
      *
-     * @param integer $userId    Filter entries by user
-     * @param integer $year      Filter entries by year
-     * @param integer $month     Filter entries by month
-     * @param integer $projectId Filter entries by project
+     * @param integer $userId     Filter entries by user
+     * @param integer $year       Filter entries by year
+     * @param integer $month      Filter entries by month
+     * @param integer $projectId  Filter entries by project
+     * @param integer $customerId Filter entries by customer
      *
      * @return array[]
      */
-    protected function getEntriesRequireAddInfo($userId, $year, $month, $projectId)
+    protected function getEntriesRequireAddInfo($userId, $year, $month, $projectId, $customerId)
     {
         $arEntries = $this->getEntryRepository()->findByMonthWithExternalInformation(
-            $userId, $year, $month, $projectId
+            $userId, $year, $month, $projectId, $customerId
         );
 
         foreach ($arEntries as $arEntry) {
@@ -369,19 +373,20 @@ class Export
      * Returns filtered and ordered work log entries enriched with additional
      * data from external ticket systems.
      *
-     * @param integer $userId    Filter entries by user
-     * @param integer $year      Filter entries by year
-     * @param integer $month     Filter entries by month
-     * @param integer $projectId Filter entries by project
-     * @param array   $arSort    Sort result by given fields
+     * @param integer $userId     Filter entries by user
+     * @param integer $year       Filter entries by year
+     * @param integer $month      Filter entries by month
+     * @param integer $projectId  Filter entries by project
+     * @param integer $customerId Filter entries by customer
+     * @param array   $arSort     Sort result by given fields
      *
      * @return \Netresearch\TimeTrackerBundle\Entity\Entry[]
      */
-    protected function getEnrichedEntries($userId, $year, $month, $projectId, array $arSort = null)
+    protected function getEnrichedEntries($userId, $year, $month, $projectId, $customerId, array $arSort = null)
     {
         /** @var \Netresearch\TimeTrackerBundle\Entity\Entry[] $arEntries */
         $arEntries = $this->getEntryRepository()
-            ->findByDate($userId, $year, $month, $projectId, $arSort);
+            ->findByDate($userId, $year, $month, $projectId, $customerId, $arSort);
 
         foreach ($arEntries as $entry) {
             if (array_key_exists($entry->getTicket(), $this->additionalInformation)
@@ -410,12 +415,13 @@ class Export
      * Adds billable (boolean) property to entries depending on the existence
      * of a "billable" label in belonging JIRA issues
      *
-     * @param int   $currentUserId
-     * @param array $entries
+     * @param int   $currentUserId     logged in users id
+     * @param array $entries           entries to export
+     * @param bool  $removeNotBillable remove not billable entries
      *
      * @return array
      */
-    public function enrichEntriesWithBillableInformation($currentUserId, array $entries)
+    public function enrichEntriesWithBillableInformation($currentUserId, array $entries, $removeNotBillable = false)
     {
         /* @var $currentUser \Netresearch\TimeTrackerBundle\Entity\User */
         $doctrine = $this->container->get('doctrine');
@@ -472,8 +478,13 @@ class Export
             }
         }
 
-        foreach ($entries as $entry) {
-            $entry->billable = in_array($entry->getTicket(), $arBillable);
+        foreach ($entries as $key => $entry) {
+            $billable = in_array($entry->getTicket(), $arBillable);
+            if (!$billable && $removeNotBillable) {
+                unset($entries[$key]);
+            } else {
+                $entry->billable = $billable;
+            }
         }
 
         return $entries;

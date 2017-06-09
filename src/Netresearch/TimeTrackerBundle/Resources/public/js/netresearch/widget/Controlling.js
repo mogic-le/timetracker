@@ -7,11 +7,14 @@ Ext.define('Netresearch.widget.Controlling', {
     extend: 'Ext.tab.Panel',
 
 	requires: [
-   	    'Netresearch.store.AdminUsers'
+   	    'Netresearch.store.AdminUsers',
+   	    'Netresearch.store.AdminProjects',
+   	    'Netresearch.store.AdminCustomers',
     ],
 
 	userStore: Ext.create('Netresearch.store.AdminUsers'),
 	projectStore: Ext.create('Netresearch.store.AdminProjects'),
+	customerStore: Ext.create('Netresearch.store.AdminCustomers'),
 
     curYear: new Date().getFullYear(),
 
@@ -19,10 +22,12 @@ Ext.define('Netresearch.widget.Controlling', {
     _monthlyStatement: 'Monthly statement',
     _userTitle: 'User',
     _projectTitle: 'Project',
+    _customerTitle: 'Customer',
     _yearTitle: 'Year',
     _monthTitle: 'Month',
     _exportTitle: 'Export',
     _tabTitle: 'Controlling',
+    _billableTitle: 'limit export to billable entries',
     
 
     initComponent: function() {
@@ -90,6 +95,19 @@ Ext.define('Netresearch.widget.Controlling', {
                 anchor: '100%',
                 value: ''
             }, {
+                id: 'cnt-customer',
+                xtype: 'combo',
+                store: this.customerStore,
+                mode: 'local',
+                fieldLabel: this._customerTitle,
+                name: 'customer',
+                labelWidth: 100,
+                width: 260,
+                valueField: 'id',
+                displayField: 'name',
+                anchor: '100%',
+                value: ''
+            }, {
                 id: 'cnt-year',
                 xtype: 'combo',
                 store: yearStore,
@@ -113,6 +131,13 @@ Ext.define('Netresearch.widget.Controlling', {
                 displayField: 'displayname',
                 valueField: 'value',
                 value: curMonth
+            }, {
+                id:'cnt-billable',
+                xtype: 'checkbox',
+                fieldLabel: this._billableTitle,
+                name: 'billable',
+                trueText: '1',
+                falseText: '0'
             }],
             buttons: [{
                 text: this._exportTitle,
@@ -121,8 +146,10 @@ Ext.define('Netresearch.widget.Controlling', {
                     var user = Ext.getCmp("cnt-user").value;
                     var year = parseInt(Ext.getCmp("cnt-year").value);
                     var month = parseInt(Ext.getCmp("cnt-month").value);
-                    var project = parseInt(Ext.getCmp("cnt-project").value);
-                    this.exportEntries(user, year, month, project);
+                    var project = Ext.getCmp("cnt-project").value;
+                    var customer = Ext.getCmp("cnt-customer").value;
+                    var billable = +Ext.getCmp("cnt-billable").value;
+                    this.exportEntries(user, year, month, project, customer, billable);
                 }
             }]
         });
@@ -147,19 +174,30 @@ Ext.define('Netresearch.widget.Controlling', {
         this.callParent();
     },
 
-    exportEntries: function(user, year, month, project) {
+    exportEntries: function(user, year, month, project, customer, billable) {
         if ((undefined == user) || (null == user) || ('' == user) || (1 > user)) {
             user = 0;
         }
         if ((undefined == project) || (null == project) || ('' == project) || (1 > project)) {
             project = 0;
         }
-        window.location.href = 'controlling/export/' + user + '/' + year + '/' + month + '/' + project;
+        if ((undefined == customer) || (null == customer) || ('' == customer) || (1 > customer)) {
+            customer = 0;
+        }
+
+        window.location.href = 'controlling/export/'
+            + user + '/'
+            + year + '/'
+            + month + '/'
+            + project + '/'
+            + customer + '/'
+            + billable;
     },
 
     refreshStores: function () {
         this.userStore.load();
         this.projectStore.load();
+        this.customerStore.load();
     }
 
 });
@@ -169,9 +207,11 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'de')) {
         _monthlyStatement: 'Monats-Abrechnung',
         _userTitle: 'Mitarbeiter',
         _projectTitle: 'Projekt',
+        _customerTitle: 'Kunde',
         _yearTitle: 'Jahr',
         _monthTitle: 'Monat',
         _exportTitle: 'Exportieren',
-        _tabTitle: 'Abrechnung'
+        _tabTitle: 'Abrechnung',
+        _billableTitle: 'nur abrechenbare Einträge exportieren'
     });
 }

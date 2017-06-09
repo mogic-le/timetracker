@@ -43,24 +43,28 @@ class ControllingController extends BaseController
             return $this->getFailedLoginResponse();
         }
 
-        $projectid = $request->get('project');
-        $userId    = $request->get('userid');
-        $year      = $request->get('year');
-        $month     = $request->get('month');
+        $projectId    = (int)  $request->get('project');
+        $userId       = (int)  $request->get('userid');
+        $year         = (int)  $request->get('year');
+        $month        = (int)  $request->get('month');
+        $customerId   = (int)  $request->get('customer');
+        $onlyBillable = (bool) $request->get('billable');
 
         $service = $this->get('nr.timetracker.export');
         $entries = $service->exportEntries(
-            $userId, $year, $month, $projectid, array(
+            $userId, $year, $month, $projectId, $customerId, array(
                 'user.username'  => true,
                 'entry.day'   => true,
                 'entry.start' => true,
             )
         );
 
-        $showBillable = $this->container->getParameter('app_show_billable_field_in_export');
+        $showBillableField = $this->container->getParameter('app_show_billable_field_in_export');
 
-        if ($showBillable) {
-            $entries = $service->enrichEntriesWithBillableInformation($this->_getUserId($request), $entries);
+        if ($showBillableField) {
+            $entries = $service->enrichEntriesWithBillableInformation(
+                $this->_getUserId($request), $entries, $onlyBillable
+            );
         }
 
         $username = $service->getUsername($userId);
@@ -71,7 +75,7 @@ class ControllingController extends BaseController
             array(
                 'entries'   => $entries,
                 'labels'    => $service->getLabelsForSingleColumns(),
-                'showbillable'  => $showBillable
+                'showbillable'  => $showBillableField
             )
         );
 
