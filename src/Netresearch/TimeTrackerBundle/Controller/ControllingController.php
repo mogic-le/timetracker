@@ -75,8 +75,8 @@ class ControllingController extends BaseController
         $content = $this->get('templating')->render(
             'NetresearchTimeTrackerBundle:Default:export.csv.twig',
             array(
-                'entries'   => $entries,
-                'labels'    => $service->getLabelsForSingleColumns(),
+                'entries'       => $entries,
+                'labels'        => $service->getLabelsForSingleColumns(),
                 'showbillable'  => $showBillableField
             )
         );

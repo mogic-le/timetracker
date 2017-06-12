@@ -458,14 +458,12 @@ class Export
                     );
                 }
 
-                if (!isset($arTickets[$ticketSystem->getId()][$entry->getTicket()])) {
-                    $arTickets[$ticketSystem->getId()][] = $entry->getTicket();
-                }
+                $arTickets[$ticketSystem->getId()][] = $entry->getTicket();
             }
         }
 
 
-        $maxRequestsElements = 100;
+        $maxRequestsElements = 50;
         $arBillable = [];
         /** @var JiraOAuthApi $jiraApi */
         foreach ($arApi as $idx => $jiraApi) {
