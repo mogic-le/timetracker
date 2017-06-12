@@ -29,7 +29,8 @@
         "incenteev/composer-parameter-handler": "~2.0",
         "jms/security-extra-bundle": "*",
         "jms/di-extra-bundle": "*",
-        "zendframework/zend-ldap": "*"
+        "zendframework/zend-ldap": "*",
+        "jpastoor/jira-api-restclient": "^2.0"
     },
     "require-dev": {
         "sensio/generator-bundle": "~3.0",

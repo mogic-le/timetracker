@@ -126,12 +126,17 @@ class Export
      */
     public function exportEntries($userId, $year, $month, $projectId, $customerId, array $arSort = null)
     {
-        $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo(
-            $userId, $year, $month, $projectId, $customerId
-        );
-        if (0 < count($entriesRequireAdditionalInformation)) {
-            $this->extractTicketSystems($entriesRequireAdditionalInformation);
-            $this->fetchAdditionalInfoFromExternalJira();
+        try {
+            $entriesRequireAdditionalInformation = $this->getEntriesRequireAddInfo(
+                $userId, $year, $month, $projectId, $customerId
+            );
+
+            if (0 < count($entriesRequireAdditionalInformation)) {
+                $this->extractTicketSystems($entriesRequireAdditionalInformation);
+                $this->fetchAdditionalInfoFromExternalJira();
+            }
+        } catch (\Exception $e) {
+            $this->additionalInformation = [];
         }
 
         return $this->getEnrichedEntries($userId, $year, $month, $projectId, $customerId, $arSort);
@@ -459,21 +464,30 @@ class Export
             }
         }
 
+
+        $maxRequestsElements = 100;
         $arBillable = [];
         /** @var JiraOAuthApi $jiraApi */
         foreach ($arApi as $idx => $jiraApi) {
-            $ret = $jiraApi->get(
-                '/search?' . http_build_query(
-                    [
-                        'jql' => 'IssueKey in (' . join(',', $arTickets[$idx]) . ')',
-                        'fields' => 'labels'
-                    ]
-                )
-            );
+            $ticketSystemIssuesTotal = array_unique($arTickets[$idx]);
+            $ticketSystemIssuesTotalChunks = array_chunk($ticketSystemIssuesTotal, $maxRequestsElements);
 
-            foreach ($ret->issues as $issue) {
-                if (isset($issue->fields->labels) && in_array('billable', $issue->fields->labels)) {
-                    $arBillable[] = $issue->key;
+            if (is_array($ticketSystemIssuesTotalChunks) && !empty($ticketSystemIssuesTotalChunks)) {
+                foreach ($ticketSystemIssuesTotalChunks as $arIssues) {
+                    $ret = $jiraApi->get(
+                        '/search?' . http_build_query(
+                            [
+                                'jql' => 'IssueKey in (' . join(',', $arIssues) . ')',
+                                'fields' => 'labels'
+                            ]
+                        )
+                    );
+
+                    foreach ($ret->issues as $issue) {
+                        if (isset($issue->fields->labels) && in_array('billable', $issue->fields->labels)) {
+                            $arBillable[] = $issue->key;
+                        }
+                    }
                 }
             }
         }

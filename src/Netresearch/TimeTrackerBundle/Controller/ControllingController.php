@@ -14,6 +14,7 @@
 
 namespace Netresearch\TimeTrackerBundle\Controller;
 
+use chobie\Jira\Api\Exception;
 use Symfony\Component\HttpFoundation\Response;
 use Symfony\Component\HttpFoundation\Request;
 
@@ -65,6 +66,7 @@ class ControllingController extends BaseController
             $entries = $service->enrichEntriesWithBillableInformation(
                 $this->_getUserId($request), $entries, $onlyBillable
             );
+
         }
 
         $username = $service->getUsername($userId);
