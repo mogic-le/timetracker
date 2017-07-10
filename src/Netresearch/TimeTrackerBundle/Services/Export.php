@@ -462,8 +462,7 @@ class Export
             }
         }
 
-
-        $maxRequestsElements = 50;
+        $maxRequestsElements = 500;
         $arBillable = [];
         /** @var JiraOAuthApi $jiraApi */
         foreach ($arApi as $idx => $jiraApi) {
@@ -472,13 +471,13 @@ class Export
 
             if (is_array($ticketSystemIssuesTotalChunks) && !empty($ticketSystemIssuesTotalChunks)) {
                 foreach ($ticketSystemIssuesTotalChunks as $arIssues) {
-                    $ret = $jiraApi->get(
-                        '/search?' . http_build_query(
-                            [
-                                'jql' => 'IssueKey in (' . join(',', $arIssues) . ')',
-                                'fields' => 'labels'
-                            ]
-                        )
+                    $ret = $jiraApi->post(
+                        '/search',
+                        [
+                            'jql' => 'IssueKey in (' . join(',', $arIssues) . ')',
+                            'fields' => ['labels'],
+                            'maxResults' => '500'
+                        ]
                     );
 
                     foreach ($ret->issues as $issue) {
