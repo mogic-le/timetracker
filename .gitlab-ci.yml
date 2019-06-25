@@ -1,0 +1,41 @@
+stages:
+  - test
+  - build-push
+  - deploy
+
+variables:
+  PRODUCTIONBRANCH: master
+
+before_script:
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+  - eval $(ssh-agent -s)
+  - SSH_ASKPASS_SCRIPT=~/.ssh-askpass-pw.sh
+  - JENKINS_KEY=$(vault kv get -field=private_key devops/ssh-keys/Jenkins-Key)
+  - echo "$JENKINS_KEY" | tr -d '\r' | DISPLAY=":0.0" SSH_ASKPASS=$SSH_ASKPASS_SCRIPT setsid ssh-add - > /dev/null
+
+test-production:
+  stage: test
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/test.yml -i apps/timetracker/env/production.ini -vvv
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+build-push-production:
+  stage: build-push
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/build-push.yml -i apps/timetracker/env/production.ini -vvv
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+deploy-production:
+  stage: deploy
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/deploy.yml -i apps/timetracker/env/production.ini -vvv
+  environment:
+    name: production
+    url: https://tt.mogic.com
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
