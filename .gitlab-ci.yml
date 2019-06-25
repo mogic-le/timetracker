@@ -1,0 +1,40 @@
+stages:
+  - test
+  - build-push
+  - deploy
+
+variables:
+  PRODUCTIONBRANCH: master
+
+before_script:
+  - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
+  - eval $(ssh-agent -s)
+  - DEPLOY_KEY=$(vault kv get -field=ssh-key-private devops/SSH/Mogic-General-Refresh)
+  - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
+
+test-production:
+  stage: test
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/test.yml -i apps/timetracker/env/production.ini -vvv
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+build-push-production:
+  stage: build-push
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/build-push.yml -i apps/timetracker/env/production.ini -vvv
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+deploy-production:
+  stage: deploy
+  script:
+    - cd /opt/cis; ansible-playbook apps/timetracker/deploy.yml -i apps/timetracker/env/production.ini -vvv
+  environment:
+    name: production
+    url: https://tt.mogic.com
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
