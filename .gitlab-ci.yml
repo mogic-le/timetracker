@@ -9,9 +9,8 @@ variables:
 before_script:
   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
   - eval $(ssh-agent -s)
-  - SSH_ASKPASS_SCRIPT=~/.ssh-askpass-pw.sh
-  - JENKINS_KEY=$(vault kv get -field=private_key devops/ssh-keys/Jenkins-Key)
-  - echo "$JENKINS_KEY" | tr -d '\r' | DISPLAY=":0.0" SSH_ASKPASS=$SSH_ASKPASS_SCRIPT setsid ssh-add - > /dev/null
+  - DEPLOY_KEY=$(vault kv get -field=ssh-key-private devops/SSH/Mogic-General-Refresh)
+  - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
 
 test-production:
   stage: test
