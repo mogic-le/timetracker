@@ -1,4 +1,4 @@
-FROM debian:jessie
+FROM debian:buster
 
 MAINTAINER "Stefan Berger" <berger@mogic.com>
 
@@ -8,23 +8,31 @@ ENV TZ=Europe/Berlin
 RUN usermod -u 1000 www-data\
     && groupmod -g 1000 www-data\
     && apt-get -y update \
+    && apt-get -y install apt-transport-https lsb-release ca-certificates curl\
+    && curl -sSL -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg\
+    && sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'\
+    && apt-get update\
     && apt-get -y install\
         apache2\
         curl\
         git-core\
-        libapache2-mod-php5\
+        libapache2-mod-php7.4\
         locales\
-        php5-curl\
-        php5-intl\
-        php5-json\
-        php5-ldap\
-        php5-mysqlnd\
-        php5-oauth\
-        php5\
+        php7.4-curl\
+        php7.4-gd\
+        php7.4-intl\
+        php7.4-json\
+        php7.4-ldap\
+        php7.4-mbstring\
+        php7.4-mysqlnd\
+        php7.4-oauth\
+        php7.4-xml\
+        php7.4-zip\
+        php7.4\
     && apt-get clean\
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*\
     && a2enmod rewrite\
-    && curl --output /usr/bin/composer https://getcomposer.org/composer.phar\
+    && curl -s --output /usr/bin/composer https://getcomposer.org/composer-1.phar\
     && chmod 0755 /usr/bin/composer\
     && echo 'de_DE.UTF-8 UTF-8' > /etc/locale.gen\
     && locale-gen de_DE.UTF-8
