@@ -8,7 +8,7 @@ ENV TZ=Europe/Berlin
 RUN usermod -u 1000 www-data\
     && groupmod -g 1000 www-data\
     && apt-get -y update \
-    && apt-get -y upgrade \ 
+    && apt-get -y upgrade \
     && apt-get -y install apt-transport-https lsb-release ca-certificates curl\
     && curl -sSL -o /etc/apt/trusted.gpg.d/php.gpg https://packages.sury.org/php/apt.gpg\
     && sh -c 'echo "deb https://packages.sury.org/php/ $(lsb_release -sc) main" > /etc/apt/sources.list.d/php.list'\
@@ -33,7 +33,7 @@ RUN usermod -u 1000 www-data\
     && apt-get clean\
     && rm -rf /var/lib/apt/lists/* /tmp/* /var/tmp/*\
     && a2enmod rewrite\
-    && curl -s --output /usr/bin/composer https://getcomposer.org/composer-1.phar\
+    && curl -s --output /usr/bin/composer https://getcomposer.org/download/latest-2.2.x/composer.phar\
     && chmod 0755 /usr/bin/composer\
     && echo 'de_DE.UTF-8 UTF-8' > /etc/locale.gen\
     && locale-gen de_DE.UTF-8
