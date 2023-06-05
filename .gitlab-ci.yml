@@ -11,6 +11,7 @@ stages:
 # Variables
 variables:
   BASEIMAGE: debian:buster
+  TESTINGBRANCH: develop
   PRODUCTIONBRANCH: master
 
 .add_deploy_key: &add_deploy_key
@@ -131,7 +132,7 @@ deploy:
     - buildAndPush
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_COMMIT_REF_SLUG.timetracker.mogic-server.de
+    url: https://$CI_COMMIT_REF_SLUG.tt.mogic-server.de
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
@@ -147,7 +148,7 @@ deployStaging:
     - buildAndPushStaging
   environment:
     name: review/$CI_COMMIT_REF_NAME
-    url: https://$CI_COMMIT_REF_SLUG.timetracker.mogic-server.de
+    url: https://$CI_COMMIT_REF_SLUG.tt.mogic-server.de
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
