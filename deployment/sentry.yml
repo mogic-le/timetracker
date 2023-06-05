@@ -1,0 +1,7 @@
+sensio_framework_extra:
+   psr_message:
+      enabled: false
+sentry:
+  dsn: "https://16dc78f899f34f50b0c53e31b542d3b2@sentry.mogic.com//32"
+  tracing:
+    enabled: false

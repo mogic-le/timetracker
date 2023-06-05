@@ -1,4 +1,6 @@
-FROM debian:buster
+ARG BASEIMAGE=debian:buster
+
+FROM ${BASEIMAGE}
 
 MAINTAINER "Stefan Berger" <berger@mogic.com>
 

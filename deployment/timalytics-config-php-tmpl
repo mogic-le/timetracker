@@ -1,0 +1,18 @@
+<?php
+$GLOBALS['cfg']['DB_HOST'] = '{{.tal_db_host}}';
+$GLOBALS['cfg']['DB_PASS'] = '{{.tal_db_password}}';
+$GLOBALS['cfg']['DB_USER'] = '{{.tal_db_user}}';
+$GLOBALS['cfg']['DB_NAME'] = '{{.tal_db_name}}';
+
+$GLOBALS['cfg']['TT_DB_HOST'] = '{{.tt_db_host}}';
+$GLOBALS['cfg']['TT_DB_PASS'] = '{{.tt_db_password}}';
+$GLOBALS['cfg']['TT_DB_USER'] = '{{.tt_db_user}}';
+$GLOBALS['cfg']['TT_DB_NAME'] = '{{.tt_db_name}}';
+
+$GLOBALS['cfg']['allowDelete'] = true;
+
+$GLOBALS['cfg']['URL_TIMETRACKER'] = '/';
+
+setlocale(LC_TIME, 'de_DE.utf-8');
+
+require __DIR__ . '/src/timetrackersessionuser.php';

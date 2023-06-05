@@ -1,40 +1,221 @@
 stages:
-  - test
-  - build-push
+  - preparation
+  - building
+  - pushing
   - deploy
+  - onSystem
+  - permissions
+  - onSystem-cleanup
+  - sbom
 
+# Variables
 variables:
+  BASEIMAGE: debian:buster
   PRODUCTIONBRANCH: master
 
-before_script:
+.add_deploy_key: &add_deploy_key
   - 'which ssh-agent || ( apt-get update -y && apt-get install openssh-client git -y )'
   - eval $(ssh-agent -s)
   - DEPLOY_KEY=$(vault kv get -field=ssh-key-private devops/SSH/Mogic-General-Refresh)
   - echo "$DEPLOY_KEY" | tr -d '\r' | ssh-add - > /dev/null
+  - mkdir -p ~/.ssh
+  - chmod 700 ~/.ssh
+  - ssh-keyscan gitlab.mogic.com >> ~/.ssh/known_hosts
+  - chmod 644 ~/.ssh/known_hosts
+  - if [ "$CI_COMMIT_REF_SLUG" == "$PRODUCTIONBRANCH" ];
+      then export ENVIRONMENT='production'; export VAULTPATH_KV2="projects_prod/data/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME"; export VAULTPATH_KV1="projects_prod/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME";
+      elif [ "$CI_COMMIT_REF_SLUG" == "$STAGINGBRANCH" ]; then export ENVIRONMENT='staging'; export VAULTPATH_KV2="projects/data/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/staging"; export VAULTPATH_KV1="projects/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/staging";
+      else export ENVIRONMENT='testing'; export VAULTPATH_KV2="projects/data/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/testing"; VAULTPATH_KV1="projects/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME/testing"; fi
 
-test-production:
-  stage: test
+prepare:
+  stage: preparation
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  before_script: *add_deploy_key
   script:
-    - cd /opt/cis; ansible-playbook apps/timetracker/test.yml -i apps/timetracker/env/production.ini -vvv
+    - git clone https://github.com/mogic-le/timalytics.git timalytics
+    - cd web && ln -sf ../timalytics/www stats
+    - echo "VER:$(git describe) REV:$(git log --pretty=format:'%h' -n 1)-$(git rev-parse --abbrev-ref HEAD) // DEP:$(date)" > REVISION
+    - cd $CI_PROJECT_DIR
+    - cp deployment/ldap_ou_team_mapping.yml app/config/ldap_ou_team_mapping.yml
+    - cp deployment/sentry.yml app/config/sentry.yml
+    - gitlabci-templating -inputTemplate $CI_PROJECT_DIR/deployment/parameters-yml-tmpl -vaultPath $VAULTPATH_KV2 -outputFile $CI_PROJECT_DIR/app/config/parameters.yml.local
+    - gitlabci-templating -inputTemplate $CI_PROJECT_DIR/deployment/timalytics-config-php-tmpl -vaultPath $VAULTPATH_KV2 -outputFile $CI_PROJECT_DIR/timalytics/config.php.local
+    - cd app/config/ && cp parameters.yml.local parameters.yml
+    - cd $CI_PROJECT_DIR
+    - cd timalytics/ && cp config.php.local config.php
+    - cd $CI_PROJECT_DIR
+    - cd web/ && cp .htaccess_live .htaccess
+  artifacts:
+    paths:
+      - $CI_PROJECT_DIR/timalytics/
+      - $CI_PROJECT_DIR/web/
+      - $CI_PROJECT_DIR/app/
+      - $CI_PROJECT_DIR/REVISION
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
+      - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+.push-script: &push-script
+  - docker login -u gitlab-ci-token -p $CI_JOB_TOKEN gitlab-docker.mogic.com
+  # Build and Push Dockerimage
+  - docker pull $BASEIMAGE
+  - docker build --build-arg BASEIMAGE=$BASEIMAGE -t gitlab-docker.mogic.com/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:${CI_COMMIT_REF_SLUG} .
+  - docker push gitlab-docker.mogic.com/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:${CI_COMMIT_REF_SLUG}
+  - export DOCKERIMAGE=gitlab-docker.mogic.com/$CI_PROJECT_NAMESPACE/$CI_PROJECT_NAME:${CI_COMMIT_REF_SLUG}
+  - gitlabci-templating -inputTemplate $CI_PROJECT_DIR/deployment/docker-compose-template-$ENVIRONMENT -vaultPath $VAULTPATH_KV2 -outputFile $CI_PROJECT_DIR/docker-compose.yml
+
+.deploy_script: &deploy_script
+  - TARGET_HOST=$(vault kv get -field=TARGET_HOST $VAULTPATH_KV1)
+  - ssh-keyscan $TARGET_HOST >> ~/.ssh/known_hosts
+  - ssh root@$TARGET_HOST "mkdir -p /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME"
+  - rsync -havz --delete --exclude=/.git --exclude=/data -e 'ssh -p 22' docker-compose.yml "root@$TARGET_HOST:/opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME"
+  - ssh root@$TARGET_HOST "docker login -u gitlab-ci-token -p $CI_JOB_TOKEN gitlab-docker.mogic.com"
+  - ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker-compose pull"
+  - INSTANCES=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker-compose ps -q timetracker") || true
+  - if [[ -z $INSTANCES ]]; then ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker-compose up -d"; exit 0; fi;
+  - NEW_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created > .[1].Created then .[0].Id else .[1].Id end'")
+  - OLD_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created < .[1].Created then .[0].Id else if .[1].Id != "null" then .[1].Id else .[0].Id end end'")
+  - if [[ $NEW_INSTANCE_ID != $OLD_INSTANCE_ID ]]; then ssh root@$TARGET_HOST "docker stop $OLD_INSTANCE_ID && docker rm $OLD_INSTANCE_ID";
+    else ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker-compose up -d --no-recreate --scale timetracker=2"; fi
+
+.build_push_template: &build_push_template
+  stage: pushing
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  before_script: *add_deploy_key
+  script: *push-script
+  dependencies:
+    - prepare
+  artifacts:
+    paths:
+      - docker-compose.yml
+    expire_in: 1 days
+    when: always
+
+buildAndPush:
+  <<: *build_push_template
+  variables:
+    DOCKER_DRIVER: overlay2
+    APP_DEBUG: 'true'
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
+
+buildAndPushStaging:
+  <<: *build_push_template
+  variables:
+    DOCKER_DRIVER: overlay2
+    APP_DEBUG: 'true'
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
+
+buildAndPushProduction:
+  <<: *build_push_template
+  variables:
+    DOCKER_DRIVER: overlay2
+    APP_DEBUG: 'false'
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
 
-build-push-production:
-  stage: build-push
-  script:
-    - cd /opt/cis; ansible-playbook apps/timetracker/build-push.yml -i apps/timetracker/env/production.ini -vvv
-  only:
-    variables:
-      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
-
-deploy-production:
+deploy:
   stage: deploy
-  script:
-    - cd /opt/cis; ansible-playbook apps/timetracker/deploy.yml -i apps/timetracker/env/production.ini -vvv
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script: *add_deploy_key
+  script: *deploy_script
+  dependencies:
+    - buildAndPush
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://$CI_COMMIT_REF_SLUG.timetracker.mogic-server.de
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
+
+deployStaging:
+  stage: deploy
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script: *add_deploy_key
+  script: *deploy_script
+  dependencies:
+    - buildAndPushStaging
+  environment:
+    name: review/$CI_COMMIT_REF_NAME
+    url: https://$CI_COMMIT_REF_SLUG.timetracker.mogic-server.de
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
+
+deploy-prod:
+  stage: deploy
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  variables:
+    DOCKER_DRIVER: overlay2
+  before_script: *add_deploy_key
+  script: *deploy_script
+  dependencies:
+    - buildAndPushProduction
   environment:
     name: production
     url: https://tt.mogic.com
   only:
     variables:
       - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+onSystem-permissions:
+  stage: permissions
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  before_script: *add_deploy_key
+  script:
+    - TARGET_HOST=$(vault kv get -field=TARGET_HOST $VAULTPATH_KV1)
+    - ssh-keyscan $TARGET_HOST >> ~/.ssh/known_hosts
+    # change permissions on system
+    - NEW_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created > .[1].Created then .[0].Id else .[1].Id end'")
+    - OLD_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created < .[1].Created then .[0].Id else if .[1].Id != "null" then .[1].Id else .[0].Id end end'")
+    - ssh root@$TARGET_HOST "docker exec -t $NEW_INSTANCE_ID sh -c 'chown -R www-data:www-data /var/www/'"
+  only:
+    variables:
+      - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
+      - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+onSystem-cleanupOldInstance:
+  stage: onSystem-cleanup
+  image: gitlab-docker.mogic.com/docker/gitlab-ci-git-dind
+  before_script:
+    - *add_deploy_key
+  script:
+    - TARGET_HOST=$(vault kv get -field=TARGET_HOST $VAULTPATH_KV1)
+    - ssh-keyscan $TARGET_HOST >> ~/.ssh/known_hosts
+    - NEW_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created > .[1].Created then .[0].Id else .[1].Id end'")
+    - OLD_INSTANCE_ID=$(ssh root@$TARGET_HOST "cd /opt/$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-$CI_COMMIT_REF_NAME/ && docker inspect \$(docker-compose ps -q timetracker) | jq 'if .[0].Created < .[1].Created then .[0].Id else if .[1].Id != "null" then .[1].Id else .[0].Id end end'")
+    - if [[ $NEW_INSTANCE_ID != $OLD_INSTANCE_ID ]]; then ssh root@$TARGET_HOST "docker stop $OLD_INSTANCE_ID && docker rm $OLD_INSTANCE_ID"; else echo 'There is just one running instance, did nothing'; fi
+  only:
+    refs:
+      - branches
+    variables:
+      - $CI_COMMIT_REF_NAME == $TESTINGBRANCH
+      - $CI_COMMIT_REF_NAME == $STAGINGBRANCH
+      - $CI_COMMIT_REF_NAME == $PRODUCTIONBRANCH
+
+generate-sbom-composer:
+  stage: sbom
+  image: gitlab-docker.mogic.com/immobilie1/timetracker/build:latest
+  before_script: *add_deploy_key
+  script:
+    - composer2 global remove hirak/prestissimo || true
+    - composer2 global config --no-plugins allow-plugins.cyclonedx/cyclonedx-php-composer true || true
+    - composer2 global require cyclonedx/cyclonedx-php-composer
+    - composer2 make-bom || composer2 CycloneDX:make-sbom  --output-file=bom.xml
+    - DEPTRACK_URL=$(vault kv get -field="deptrack_api_url" devops/Dependencytrack)
+    - DEPTRACK_API_KEY=$(vault kv get -field="deptrack_api_key" devops/Dependencytrack)
+    - "curl -X POST $DEPTRACK_URL -H \"Content-Type: multipart/form-data\" -H \"X-API-Key: $DEPTRACK_API_KEY\" -F \"autoCreate=true\" -F \"projectName=$CI_PROJECT_NAMESPACE-$CI_PROJECT_NAME-composer\" -F \"projectVersion=$CI_COMMIT_TAG\" -F bom=@bom.xml"
+  dependencies: []
+  only:
+    - tags

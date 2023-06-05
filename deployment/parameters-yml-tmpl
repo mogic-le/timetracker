@@ -1,0 +1,28 @@
+# This file is auto-generated during the composer install
+parameters:
+    database_driver: pdo_mysql
+    database_host: {{.tt_db_host}}
+    database_port: null
+    database_name: {{.tt_db_name}}
+    database_user: {{.tt_db_user}}
+    database_password: {{.tt_db_password}}
+    mailer_transport: smtp
+    mailer_host: {{.mailer_host}}
+    mailer_user: {{.mailer_user}}
+    mailer_password: {{.mailer_password}}
+    locale: en
+    secret: {{.secret}}
+    ldap_host: {{.ldap_host}}
+    ldap_port: {{.ldap_port}}
+    ldap_readuser: '{{.ldap_user}}'
+    ldap_readpass: {{.ldap_password}}
+    ldap_basedn: '{{.ldap_basedn}}'
+    ldap_usernamefield: {{.ldap_usernamefield}}
+    ldap_usessl: {{.ldap_usessl}}
+    ldap_create_user: true
+    app_logo_url: '/logo.png'
+    app_monthly_overview_url: stats/?user=
+    app_title: mogic.timetracker
+    app_header_url: ''
+    app_show_billable_field_in_export: true
+    service_users: {{.service_users}}

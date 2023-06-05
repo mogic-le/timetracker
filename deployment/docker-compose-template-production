@@ -1,0 +1,41 @@
+---
+version: "3.7"
+services:
+
+  timetracker:
+    image: 'gitlab-docker.mogic.com/mogic/timetracker:{{.CI_COMMIT_REF_SLUG}}'
+    depends_on:
+      - db
+    restart: always
+    labels:
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}.rule=Host(`tt.mogic.com`)"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}.entrypoints=web"
+      - "traefik.http.middlewares.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}-redirect.redirectscheme.scheme=https"
+      - "traefik.http.middlewares.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}-redirect.redirectscheme.permanent=true"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}.middlewares={{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}-redirect"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}secure.rule=Host(`tt.mogic.com`)"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}secure.entrypoints=websecure"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}secure.tls=true"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}secure.tls.certresolver=letsencryptresolver"
+      - "traefik.http.routers.{{.CI_PROJECT_NAME}}-{{.CI_COMMIT_REF_SLUG}}secure.middlewares=secHeaders@file"
+      - "traefik.enable=true"
+    logging:
+      driver: "gelf"
+      options:
+        gelf-address: "udp://logs.mogic.com:12201"
+
+  db:
+    image: 'mariadb:10.3'
+    restart: always
+    environment:
+      - MYSQL_ROOT_PASSWORD={{.tt_db_root_password}}
+      - MYSQL_DATABASE={{.tt_db_name}}
+      - MYSQL_USER={{.tt_db_user}}
+      - MYSQL_PASSWORD={{.tt_db_password}}
+    volumes:
+      - ./mysql:/var/lib/mysql
+
+networks:
+  default:
+    name: traefik
+    external: true
