@@ -207,7 +207,7 @@ onSystem-cleanupOldInstance:
 
 generate-sbom-composer:
   stage: sbom
-  image: gitlab-docker.mogic.com/immobilie1/timetracker/build:latest
+  image: gitlab-docker.mogic.com/docker/mogic-base-image:webapp-jammy-php7.4
   before_script: *add_deploy_key
   script:
     - composer2 global remove hirak/prestissimo || true
