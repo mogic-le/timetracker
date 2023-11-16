@@ -17,6 +17,7 @@ use Netresearch\TimeTrackerBundle\Entity\Preset;
 use Netresearch\TimeTrackerBundle\Entity\TicketSystem;
 use Netresearch\TimeTrackerBundle\Entity\Activity;
 use Netresearch\TimeTrackerBundle\Helper\TimeHelper;
+use Netresearch\TimeTrackerBundle\Services\SubticketSyncService;
 
 /**
  * Class AdminController
@@ -173,6 +174,7 @@ class AdminController extends BaseController
             : null;
 
         $jiraId       = strtoupper($request->get('jiraId'));
+        $jiraTicket   = strtoupper($request->get('jiraTicket'));
         $active       = $request->get('active') ? $request->get('active') : 0;
         $global       = $request->get('global') ? $request->get('global') : 0;
         $estimation   = TimeHelper::readable2minutes($request->get('estimation') ? $request->get('estimation') : '0m');
@@ -238,6 +240,7 @@ class AdminController extends BaseController
             ->setName($name)
             ->setTicketSystem($ticketSystem)
             ->setJiraId($jiraId)
+            ->setJiraTicket($jiraTicket)
             ->setActive($active)
             ->setGlobal($global)
             ->setEstimation($estimation)
@@ -255,6 +258,16 @@ class AdminController extends BaseController
         $em->flush();
 
         $data = array($project->getId(), $name, $project->getCustomer()->getId(), $jiraId);
+
+        try {
+            $stss = new SubticketSyncService($this->container);
+            $subtickets = $stss->syncProjectSubtickets($project->getId());
+        } catch (\Exception $e) {
+            //we do not let it fail because creating a new project
+            // would lead to inconsistencies in the frontend
+            // ("project with that name exists already")
+            $data['message'] = $e->getMessage();
+        }
 
         return new JsonResponse($data);
     }
@@ -289,6 +302,66 @@ class AdminController extends BaseController
         }
 
         return new JsonResponse(array('success' => true));
+    }
+
+    /**
+     * Update the subtickets for all projects.
+     */
+    public function syncAllProjectSubticketsAction(Request $request)
+    {
+        if (!$this->checkLogin($request)) {
+            return $this->getFailedLoginResponse();
+        }
+
+        $projectRepo = $this->container->get('doctrine')
+            ->getRepository('NetresearchTimeTrackerBundle:Project');
+        $projects = $projectRepo->createQueryBuilder('p')
+            ->where('p.ticketSystem IS NOT NULL')
+            ->getQuery()
+            ->getResult();
+
+        try {
+            $stss = new SubticketSyncService($this->container);
+
+            foreach ($projects as $project) {
+                $subtickets = $stss->syncProjectSubtickets($project->getId());
+            }
+
+            return new JsonResponse(
+                [
+                    'success' => true
+                ]
+            );
+        } catch (\Exception $e) {
+            return new Error($e->getMessage(), $e->getCode());
+        }
+    }
+
+    /**
+     * Fetch subtickets from Jira and update the project record's "subtickets" field.
+     *
+     * The project lead user's Jira tokens are used for access.
+     */
+    public function syncProjectSubticketsAction(Request $request)
+    {
+        if (!$this->checkLogin($request)) {
+            return $this->getFailedLoginResponse();
+        }
+
+        $projectId = (int) $request->get('project');
+
+        try {
+            $stss = new SubticketSyncService($this->container);
+            $subtickets = $stss->syncProjectSubtickets($projectId);
+            return new JsonResponse(
+                [
+                    'success'    => true,
+                    'subtickets' => $subtickets
+                ]
+            );
+        } catch (\Exception $e) {
+            return new Error($e->getMessage(), $e->getCode());
+        }
     }
 
     /**

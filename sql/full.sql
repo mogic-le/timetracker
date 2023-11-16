@@ -158,6 +158,7 @@ CREATE TABLE `projects` (
   `customer_id` int(11) DEFAULT NULL,
   `name` varchar(127) NOT NULL,
   `jira_id` varchar(63) DEFAULT NULL,
+  `jira_ticket` VARCHAR(63) NULL,
   `ticket_system` int(11) NULL DEFAULT NULL,
   `active` tinyint(1) NOT NULL,
   `global` tinyint(1) unsigned NOT NULL DEFAULT '0',
@@ -173,6 +174,7 @@ CREATE TABLE `projects` (
   `additional_information_from_external` tinyint(1) NOT NULL,
   `internal_jira_project_key` VARCHAR(50) NULL,
   `internal_jira_ticket_system` INTEGER(11) NULL,
+  `subtickets` TEXT DEFAULT '',
   PRIMARY KEY (`id`),
   KEY `customer_id` (`customer_id`)
 ) ENGINE=InnoDB  DEFAULT CHARSET=utf8;

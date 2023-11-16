@@ -11,6 +11,9 @@ Ext.define('Netresearch.widget.Tracking', {
         'Ext.ux.window.Notification'
     ],
 
+    debug: false,
+    autoRefreshInterval: false,
+
     /* Create stores */
     customerStore: Ext.create('Netresearch.store.Customers'),
     projectStore: Ext.create('Netresearch.store.Projects'),
@@ -72,6 +75,12 @@ Ext.define('Netresearch.widget.Tracking', {
         const entryStore = Ext.create('Netresearch.store.Entries');
         const grid = this;
         entryStore.on("load", function() { grid.selectRow(0); });
+
+        if (this.autoRefreshInterval === true) {
+            this.autoRefreshInterval = window.setInterval(
+                this.autoRefreshProjectData, 15 * 60 * 1000, this
+            );
+        }
 
         const config = {
             title: this._tabTitle,
@@ -458,7 +467,7 @@ Ext.define('Netresearch.widget.Tracking', {
                     tooltip: 'Shortcut (Alt + r)',
                     scope: this,
                     handler: function() {
-                        this.refresh();
+                        this.refreshHard();
                     }
                 }, {
                     text: this._exportTitle,
@@ -593,10 +602,10 @@ Ext.define('Netresearch.widget.Tracking', {
     mapTicketToProject: function(ticket) {
         const validProjects = findProjects(null, ticket);
 
-        console.log("Mapping ticket " + ticket);
+        this.debug && console.log("Mapping ticket " + ticket);
 
         if ((!validProjects) || (!validProjects.length)) {
-            console.log("Mapped to no project");
+            this.debug && console.log("Mapped to no project");
             return false;
         }
 
@@ -605,7 +614,7 @@ Ext.define('Netresearch.widget.Tracking', {
         let sure = true;
 
         if (validProjects.length == 1) {
-            console.log("Mapped to customer " + customer + " and project " + " (sure, single)");
+            this.debug && console.log("Mapped to customer " + customer + " and project " + " (sure, single)");
             return { customer: parseInt(customer), id: parseInt(id), sure: sure };
         }
 
@@ -626,7 +635,7 @@ Ext.define('Netresearch.widget.Tracking', {
             }
         }
 
-        console.log("Mapped to customer " + customer + " and project " + id + (sure ? " (sure)" : " (unsure)"));
+        this.debug && console.log("Mapped to customer " + customer + " and project " + id + (sure ? " (sure)" : " (unsure)"));
         return { customer: parseInt(customer), id: parseInt(id), sure: sure };
     },
 
@@ -1095,18 +1104,46 @@ Ext.define('Netresearch.widget.Tracking', {
         window.location.href = 'export/' + this.days;
     },
 
+    /**
+     * Reload project data, then refresh
+     * Useful when project data/settings changed in the background,
+     * and we do not want to get them with a hard page reload.
+     */
+    refreshHard: function() {
+        tracking = this;
+        tracking.customerStore.reloadFromServer(function () {
+            tracking.projectStore.reloadFromServer(function () {
+                tracking.refresh();
+            });
+        });
+    },
+
+    /**
+     * Reload project data, then refresh store data.
+     * Used for automatic background refreshes to make subtickets available.
+     */
+    autoRefreshProjectData: function(tracking) {
+        tracking.customerStore.reloadFromServer(function () {
+            tracking.projectStore.reloadFromServer(function () {
+                tracking.refresh(false);
+            });
+        });
+    },
+
     /*
      * Refresh stores
      */
-    refresh: function() {
+    refresh: function(reloadView = true) {
         this.clearProjectStore();
         this.customerStore.load();
         this.activityStore.load();
         this.userStore.load();
         this.ticketSystemStore.load();
-        this.getStore().load();
 
-        this.getView().refresh();
+        if (reloadView) {
+            this.getStore().load();
+            this.getView().refresh();
+        }
         countTime();
     },
 
@@ -1446,4 +1483,3 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'ru')) {
     });
 }
 */
-

@@ -96,6 +96,10 @@ _getAllProjects:
     path:  /getAllProjects
     defaults: { _controller: NetresearchTimeTrackerBundle:Default:getAllProjects }
 
+_getProjectStructure:
+    path:  /getProjectStructure
+    defaults: { _controller: NetresearchTimeTrackerBundle:Default:getProjectStructure }
+
 _getActivities:
     path:  /getActivities
     defaults: { _controller: NetresearchTimeTrackerBundle:Default:getActivities }
@@ -165,6 +169,14 @@ saveProject:
 deleteProject:
     path: /project/delete
     defaults: { _controller: NetresearchTimeTrackerBundle:Admin:deleteProject }
+
+syncAllProjectSubtickets:
+    path: /projects/syncsubtickets
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:syncAllProjectSubtickets }
+
+syncProjectSubtickets:
+    path: /projects/{project}/syncsubtickets
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:syncProjectSubtickets }
 
 saveCustomer:
     path: /customer/save

@@ -1392,6 +1392,50 @@ paths:
                 description: id, name, customer, jiraId
                 example: [1,"TestProject",1,"TIM"]
 
+  /projects/syncsubtickets:
+    post:
+      summary: Synchronize subticket information from Jira into TimeTracker for all projects
+      tags: Project
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/SuccessResponse'
+        400:
+          description: Some error occured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+  /projects/{projectId}/syncsubtickets:
+    post:
+      summary: Synchronize subticket information from Jira into TimeTracker
+      tags: Project
+      parameters:
+        - in: path
+          name: projectId
+          required: true
+          schema:
+            type: string
+            example: 23
+      responses:
+        200:
+          description: OK
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ProjectSubticketSyncResponse'
+        400:
+          description: Some error occured
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/ErrorResponse'
+
+
   /settings/save:
     post:
       summary: Update settings
@@ -1956,6 +2000,12 @@ components:
       properties:
         message:
           type: string
+        forwardUrl:
+          type: string
+          description: Optional URL to redirect to (e.g. Jira OAuth)
+        exception:
+          type: object
+          description: Only when debugging is enabled
 
     ForbiddenResponse:
       type: object
@@ -2001,6 +2051,13 @@ components:
           type: string
           example: "TIM"
           description: Ticket prefix with only capital letters
+        jiraTicket:
+          type: string
+          example: "TIM-12"
+          description: Specific ticket key this project is meant for, instead of a whole "jiraId". See "subtickets" property. May contain multiple issue keys separated by a comma.
+        subtickets:
+          type: array
+          description: List of ticket keys that are considered to be children of the jiraTicket, e.g. child issues and issues within an epic. Includes the jiraTicket key itself.
         ticket_system:
           type: string
           example: TestTicketSystem
@@ -2055,6 +2112,18 @@ components:
       required:
         - name
         - customer
+
+    ProjectSubticketSyncResponse:
+      type: object
+      properties:
+        success:
+          type: boolean
+        subtickets:
+          type: array
+          items:
+            type: string
+            example: "TEST-23"
+
 
     SuccessResponse:
       type: object

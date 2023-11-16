@@ -36,11 +36,17 @@ Ext.define('Netresearch.widget.Admin', {
     _seriousErrorTitle: 'A serious error occurred. Find more details in Firebug or the Chrome Developer Tools.',
     _customerTitle: 'Customer',
     _ticketPrefixTitle: 'Ticket prefix',
+    _ticketPrefixTitleHelp: 'Multiple may be separated with commas',
+    _ticketNumberTitle: 'Ticket number',
+    _ticketNumberTitleHelp: 'Instead of the ticket prefix. Tasks in Epics and subtasks are taken into account. Separate multiple with a comma.',
     _ticketSystemTitle: 'Ticket system',
     _internalJiraTicketSystem: 'internal JIRA Ticket-System',
     _projectTitle: 'Project',
     _addProjectTitle: 'Add project',
     _editProjectTitle: 'Edit project',
+    _projectSubticketsTitle: 'Known subtickets',
+    _projectSubticketsSyncTitle: 'Sync subtickets',
+    _subticketSyncFinishedTitle: 'Subtickets have been synchronized from Jira.',
     _forAllCustomersTitle: 'for all customers',
     _userNameTitle: 'User name',
     _abbreviationTitle: 'Abbr',
@@ -439,6 +445,14 @@ Ext.define('Netresearch.widget.Admin', {
                     }
                 },
                 {
+                    header: this._ticketNumberTitle,
+                    dataIndex: 'jiraTicket',
+                    flex: 1,
+                    field: {
+                        xtype: 'textfield'
+                    }
+                },
+                {
                     header: this._ticketSystemTitle,
                     dataIndex: 'ticket_system',
                     flex: 1,
@@ -554,6 +568,13 @@ Ext.define('Netresearch.widget.Admin', {
                     handler: function() {
                         projectGrid.refresh();
                     }
+                }, {
+                    text: this._projectSubticketsSyncTitle,
+                    iconCls: 'icon-refresh',
+                    scope: this,
+                    handler: function() {
+                        projectGrid.syncAllProjectSubtickets();
+                    }
                 }
             ],
             listeners: {
@@ -570,12 +591,32 @@ Ext.define('Netresearch.widget.Admin', {
                                 handler: function() {
                                     this.editProject(record.data);
                                 }
-                            }, {
+                            },
+                            {
                                 text: panel._deleteTitle,
                                 iconCls: 'icon-delete',
                                 scope: this,
                                 handler: function() {
                                     this.deleteProject(record.data);
+                                }
+                            },
+                            {
+                                xtype: 'menuseparator'
+                            },
+                            {
+                                text: panel._projectSubticketsTitle,
+                                iconCls: 'icon-info',
+                                scope: this,
+                                handler: function() {
+                                    this.showProjectSubtickets(record.data);
+                                }
+                            },
+                            {
+                                text: panel._projectSubticketsSyncTitle,
+                                iconCls: 'icon-refresh',
+                                scope: this,
+                                handler: function() {
+                                    this.syncProjectSubtickets(record.data);
                                 }
                             }
                         ]
@@ -666,9 +707,17 @@ Ext.define('Netresearch.widget.Admin', {
                                 }),
                                 {
                                     fieldLabel: panel._ticketPrefixTitle,
+                                    afterSubTpl: panel._ticketPrefixTitleHelp,
                                     name: 'jiraId',
                                     anchor: '100%',
                                     value: record.jiraId ? record.jiraId : ''
+                                },
+                                {
+                                    fieldLabel: panel._ticketNumberTitle,
+                                    afterSubTpl: panel._ticketNumberTitleHelp,
+                                    name: 'jiraTicket',
+                                    anchor: '100%',
+                                    value: record.jiraTicket ? record.jiraTicket : ''
                                 },
                                 new Ext.form.field.Checkbox({
                                     fieldLabel: panel._additionalInformationFromExternal,
@@ -778,6 +827,10 @@ Ext.define('Netresearch.widget.Admin', {
                                             params: values,
                                             scope: this,
                                             success: function(response) {
+                                                let data = Ext.decode(response.responseText);
+                                                if (data.message) {
+                                                    showNotification(panel._errorTitle, data.message, false);
+                                                }
                                                 window.close();
                                             },
                                             failure: function(response) {
@@ -816,9 +869,48 @@ Ext.define('Netresearch.widget.Admin', {
                             },
                             failure: function(response) {
                                 var data = Ext.decode(response.responseText);
-                                showNotification(grid._errorTitle, data.message, false);
+                                showNotification(panel._errorTitle, data.message, false);
                             }
                         });
+                    }
+                });
+            },
+            showProjectSubtickets: function(project) {
+                Ext.Msg.alert(
+                    panel._projectSubticketsTitle + ': ' + project['name'],
+                    project['jiraTicket'] + "<br/>\n"
+                    + project['subtickets']
+                );
+            },
+            syncProjectSubtickets: function(project) {
+                var grid = this;
+                Ext.Ajax.request({
+                    method: 'POST',
+                    url: url + 'projects/' + project.id + '/syncsubtickets',
+                    scope: this,
+                    success: function(response) {
+                        grid.refresh();
+                        grid.showProjectSubtickets(project);
+                    },
+                    failure: function(response) {
+                        var data = Ext.decode(response.responseText);
+                        showNotification(panel._errorTitle, data.message, false);
+                    }
+                });
+            },
+            syncAllProjectSubtickets: function() {
+                var grid = this;
+                Ext.Ajax.request({
+                    method: 'POST',
+                    url: url + 'projects/syncsubtickets',
+                    scope: this,
+                    success: function(response) {
+                        grid.refresh();
+                        showNotification(panel._successTitle, panel._subticketSyncFinishedTitle, true);
+                    },
+                    failure: function(response) {
+                        var data = Ext.decode(response.responseText);
+                        showNotification(panel._errorTitle, data.message, false);
                     }
                 });
             },
@@ -2386,11 +2478,17 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'de')) {
         _seriousErrorTitle: ' Ein schwerer Fehler ist aufgetreten. Mehr Details gibts im Firebug/in den Chrome Developer Tools.',
         _customerTitle: 'Kunde',
         _ticketPrefixTitle: 'Ticket-Präfix',
+        _ticketPrefixTitleHelp: 'Mehrere können kommasepariert angegeben werden',
+        _ticketNumberTitle: 'Ticketnummer',
+        _ticketNumberTitleHelp: 'Anstelle des Ticket-Präfix. Aufgaben in Epics und Unteraufgaben werden mit reingezählt. Mehrere mit Komma trennen.',
         _ticketSystemTitle: 'Ticket-System',
         _internalJiraTicketSystem: 'internal JIRA Ticket-System',
         _projectTitle: 'Projekt',
         _addProjectTitle: 'Neues Projekt',
         _editProjectTitle: 'Projekt bearbeiten',
+        _projectSubticketsTitle: 'Bekannte Untertickets',
+        _projectSubticketsSyncTitle: 'Untertickets synchronisieren',
+        _subticketSyncFinishedTitle: 'Untertickets wurden von Jira synchronisiert.',
         _forAllCustomersTitle: 'für alle Kunden',
         _userNameTitle: 'Username',
         _abbreviationTitle: 'Kürzel',
@@ -2429,7 +2527,7 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'de')) {
         _privateKeyTitle: 'Private Key',
         _errorsTitle: 'Fehler',
         _errorTitle: 'Fehler',
-        _successTitle: 'Success',
+        _successTitle: 'Erfolg',
         _estimationTitle: 'Geschätzte Dauer',
         _internalJiraProjectKey: 'internal JIRA Projekt Key',
         _offerTitle: 'Angebot',
