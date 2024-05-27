@@ -1120,12 +1120,58 @@ class AdminController extends BaseController
 
         $em = $this->getDoctrine()->getManager();
         $em->persist($contract);
+
+        // when updating a existing contract dont look for other contracts for the user
+        if ($contractId) {
+            $em->flush();
+            $response = new Response($this->translate('Contract was updated.'));
+            $response->setStatusCode(200);
+            return $response;
+        }
+
+        // get existing contract for the user
+        $contractsOld = $contractRepository->findBy(['user' => $user]);
+
+        // look for contract with ongoing end
+        if (array_filter($contractsOld, fn($n) => ($n->getEnd() >= $dateStart))) {
+            $response = new Response($this->translate('There is allready an ongoing contract with a closed end in the future.'));
+            $response->setStatusCode(406);
+            return $response;
+        }
+
+        // filter open ended contracts
+        $contractsOld = array_filter($contractsOld, fn($n) => ($n->getEnd() == null));
+        if (count((array) $contractsOld) > 1) {
+            $response = new Response($this->translate('There is more than one open endet contract for the user.'));
+            $response->setStatusCode(406);
+            return $response;
+        }
+
+        if ($contractsOld) {
+            $contractOld = array_values($contractsOld)[0];
+            //check if start date of existing contract is in the future
+            if ($contractOld->getStart() >= $dateStart) {
+                $response = new Response($this->translate('There is allready an ongoing contract with start in the future.'));
+                $response->setStatusCode(406);
+                return $response;
+            }
+
+            // alter existing contract and add new one
+            $oldContractEndDate = clone $dateStart;
+            $contractOld->setEnd($oldContractEndDate->sub(new \DateInterval('P1D')));
+            $em->persist((object) $contractOld);
+            $em->flush();
+            $response = new Response($this->translate('New Contract created and old one altered.'));
+            $response->setStatusCode(201);
+            return $response;
+        }
+
+        // when no old contract with open or ongoing enddate exist or no old contract exist
         $em->flush();
-
-        $data = array($contract->getId());
-        return new JsonResponse($data);
+        $response = new Response($this->translate('New Contract created.'));
+        $response->setStatusCode(201);
+        return $response;
     }
-
 
     /**
      * @param Request $request
