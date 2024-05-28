@@ -743,7 +743,7 @@ class AdminControllerTest extends BaseTest
     public function testSaveContractAction()
     {
         $parameter = [
-            'user_id' => '1', //req
+            'user_id' => '3', //req
             'start' => '2019-11-01', //req
             'hours_0' => 1,
             'hours_1' => 2,
@@ -754,7 +754,8 @@ class AdminControllerTest extends BaseTest
             'hours_6' => 7,
         ];
         $this->client->request('POST', '/contract/save', $parameter);
-        $this->assertStatusCode(200);
+        $this->assertStatusCode(201);
+        $this->assertMessage('New Contract created.');
         $this->queryBuilder
             ->select('*')
             ->from('contracts')
@@ -763,7 +764,7 @@ class AdminControllerTest extends BaseTest
         $result = $this->queryBuilder->execute()->fetchAll();
         $expectedDbEntry = array(
             0 => array(
-                'user_id' => 1,
+                'user_id' => 3,
                 'start' => '2019-11-01',
                 'hours_0' => 1.0,
                 'hours_1' => 2.0,
@@ -775,6 +776,198 @@ class AdminControllerTest extends BaseTest
             ),
         );
         $this->assertArraySubset($expectedDbEntry, $result);
+    }
+
+    public function testSaveContractActionAlterExistingContract()
+    {
+        $values = [
+            'user_id' => '?',
+            'start' => '?',
+            'hours_0' => '?',
+            'hours_1' => '?',
+            'hours_2' => '?',
+            'hours_3' => '?',
+            'hours_4' => '?',
+            'hours_5' => '?',
+            'hours_6' => '?',
+        ];
+        $this->queryBuilder
+            ->insert('contracts')
+            ->values($values)
+            ->setParameter(0, 3)
+            ->setParameter(1, '700-01-01')
+            ->setParameter(2, 1)
+            ->setParameter(3, 2)
+            ->setParameter(4, 3)
+            ->setParameter(5, 4)
+            ->setParameter(6, 5)
+            ->setParameter(7, 5)
+            ->setParameter(8, 5)
+            ->execute();
+
+        $parameter = [
+            'user_id' => '3', //req
+            'start' => '0700-08-01', //req
+            'hours_0' => 1,
+            'hours_1' => 1,
+            'hours_2' => 1,
+            'hours_3' => 1,
+            'hours_4' => 1,
+            'hours_5' => 1,
+            'hours_6' => 1,
+        ];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(201);
+        $this->assertMessage('New Contract created and old one altered.');
+        // look at old contract
+        $this->resetQueryBuilder();
+        $this->queryBuilder
+            ->select('*')
+            ->from('contracts')
+            ->where('start = ?')
+            ->setParameter(0, '0700-01-01');
+        $result = $this->queryBuilder->execute()->fetchAll();
+        $expectedDbEntry = array(
+            0 => array(
+                'user_id' => 3,
+                'start' => '0700-01-01',
+                'end' => '0700-07-31',
+            ),
+        );
+        $this->assertArraySubset($expectedDbEntry, $result);
+    }
+
+    public function testSaveContractActionContractAlreadyExistsWithOngoingEnd()
+    {
+        $parameterContract1 = [
+            'user_id' => '3', //req
+            'start' => '2020-01-01', //req
+            'end' => '2020-03-01',
+            'hours_0' => 1,
+            'hours_1' => 1,
+            'hours_2' => 1,
+            'hours_3' => 1,
+            'hours_4' => 1,
+            'hours_5' => 1,
+            'hours_6' => 1,
+        ];
+        $parameterContract2 = [
+            'user_id' => '3', //req
+            'start' => '2020-02-01', //req
+            'hours_0' => 1,
+            'hours_1' => 1,
+            'hours_2' => 1,
+            'hours_3' => 1,
+            'hours_4' => 1,
+            'hours_5' => 1,
+            'hours_6' => 1,
+        ];
+        $this->client->request('POST', '/contract/save', $parameterContract1);
+        $this->assertMessage('New Contract created.');
+        $this->assertStatusCode(201);
+        $this->client->request('POST', '/contract/save', $parameterContract2);
+        $this->assertStatusCode(406);
+        $this->assertMessage('There is allready an ongoing contract with a closed end in the future.');
+    }
+
+    public function testSaveContractActionOldContractStartsInFuture()
+    {
+        $values = [
+            'user_id' => '?',
+            'start' => '?',
+            'hours_0' => '?',
+            'hours_1' => '?',
+            'hours_2' => '?',
+            'hours_3' => '?',
+            'hours_4' => '?',
+            'hours_5' => '?',
+            'hours_6' => '?',
+        ];
+        $this->queryBuilder
+            ->insert('contracts')
+            ->values($values)
+            ->setParameter(0, 3)
+            ->setParameter(1, '1000-01-01')
+            ->setParameter(2, 1)
+            ->setParameter(3, 2)
+            ->setParameter(4, 3)
+            ->setParameter(5, 4)
+            ->setParameter(6, 5)
+            ->setParameter(7, 5)
+            ->setParameter(8, 5)
+            ->execute();
+        $parameterContract = [
+            'user_id' => '3', //req
+            'start' => '500-01-01', //req
+            'hours_0' => 1,
+            'hours_1' => 1,
+            'hours_2' => 1,
+            'hours_3' => 1,
+            'hours_4' => 1,
+            'hours_5' => 1,
+            'hours_6' => 1,
+        ];
+        $this->client->request('POST', '/contract/save', $parameterContract);
+        $this->assertStatusCode(406);
+        $this->assertMessage('There is allready an ongoing contract with start in the future.');
+    }
+
+    public function testSaveContractActionMultipleOpenEndedContracts()
+    {
+        // put second open ended contract in the database using sql query, otherwise null date gets changed and we can test the error
+        $values = [
+            'user_id' => '?',
+            'start' => '?',
+            'hours_0' => '?',
+            'hours_1' => '?',
+            'hours_2' => '?',
+            'hours_3' => '?',
+            'hours_4' => '?',
+            'hours_5' => '?',
+            'hours_6' => '?',
+        ];
+        $this->queryBuilder
+            ->insert('contracts')
+            ->values($values)
+            ->setParameter(0, 3)
+            ->setParameter(1, '2020-01-01')
+            ->setParameter(2, 1)
+            ->setParameter(3, 2)
+            ->setParameter(4, 3)
+            ->setParameter(5, 4)
+            ->setParameter(6, 5)
+            ->setParameter(7, 5)
+            ->setParameter(8, 5)
+            ->execute();
+        $this->resetQueryBuilder();
+        $this->queryBuilder
+            ->insert('contracts')
+            ->values($values)
+            ->setParameter(0, 3)
+            ->setParameter(1, '2020-04-01')
+            ->setParameter(2, 1)
+            ->setParameter(3, 2)
+            ->setParameter(4, 3)
+            ->setParameter(5, 4)
+            ->setParameter(6, 5)
+            ->setParameter(7, 5)
+            ->setParameter(8, 5)
+            ->execute();
+
+        $parameter = [
+            'user_id' => '3', //req
+            'start' => '2020-08-01', //req
+            'hours_0' => 1,
+            'hours_1' => 1,
+            'hours_2' => 1,
+            'hours_3' => 1,
+            'hours_4' => 1,
+            'hours_5' => 1,
+            'hours_6' => 1,
+        ];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(406);
+        $this->assertMessage('There is more than one open endet contract for the user.');
     }
 
     public function testSaveContractActionDevNotAllowed()
@@ -802,7 +995,7 @@ class AdminControllerTest extends BaseTest
     {
         $parameter = [
             'id' => 1,
-            'user_id' => '2', //req
+            'user_id' => '3', //req
             'start' => '1000-01-01', //req
             'hours_0' => 0,
             'hours_1' => 0,
@@ -812,12 +1005,10 @@ class AdminControllerTest extends BaseTest
             'hours_5' => 0,
             'hours_6' => 0,
         ];
-        $expectedJson = [
-            0 => 1,
-        ];
+
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(200);
-        $this->assertJsonStructure($expectedJson);
+        $this->assertMessage('Contract was updated.');
         // validate updated contract in db
         $this->queryBuilder->select('*')
             ->from('contracts')->where('id = ?')
@@ -825,7 +1016,7 @@ class AdminControllerTest extends BaseTest
         $result = $this->queryBuilder->execute()->fetchAll();
         $expectedDbEntry = [
             [
-                'user_id' => 2,
+                'user_id' => 3,
                 'start' => '1000-01-01',
                 'hours_0' => 0,
                 'hours_1' => 0,
@@ -837,6 +1028,81 @@ class AdminControllerTest extends BaseTest
             ]
         ];
         $this->assertArraySubset($expectedDbEntry, $result);
+    }
+
+    public function testCreateContractUserNotExist()
+    {
+        $parameter = [
+            'user_id' => '42', //req
+            'start' => '1000-01-01', //req
+            'hours_0' => 0,
+            'hours_1' => 0,
+            'hours_2' => 0,
+            'hours_3' => 0,
+            'hours_4' => 0,
+            'hours_5' => 0,
+            'hours_6' => 0,
+        ];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(406);
+        $this->assertMessage('Please enter a valid user.');
+    }
+
+    public function testCreateContractNoEntry()
+    {
+        $parameter = [
+            'id' => '100',
+            'user_id' => '1', //req
+            'start' => '1000-01-01', //req
+            'hours_0' => 0,
+            'hours_1' => 0,
+            'hours_2' => 0,
+            'hours_3' => 0,
+            'hours_4' => 0,
+            'hours_5' => 0,
+            'hours_6' => 0,
+        ];
+        $expectedJson = ['message'=> 'No entry for id.'];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(404);
+        $this->assertJsonStructure($expectedJson);
+    }
+
+    public function testCreateContractInvalidStartDate()
+    {
+        $parameter = [
+            'user_id' => '1', //req
+            'start' => 'test', //req
+            'hours_0' => 0,
+            'hours_1' => 0,
+            'hours_2' => 0,
+            'hours_3' => 0,
+            'hours_4' => 0,
+            'hours_5' => 0,
+            'hours_6' => 0,
+        ];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(406);
+        $this->assertMessage('Please enter a valid contract start.');
+    }
+
+    public function testCreateContractGreaterStartThenEnd()
+    {
+        $parameter = [
+            'user_id' => '1', //req
+            'start' => '1000-01-01', //req
+            'end' => '0900-01-01',
+            'hours_0' => 0,
+            'hours_1' => 0,
+            'hours_2' => 0,
+            'hours_3' => 0,
+            'hours_4' => 0,
+            'hours_5' => 0,
+            'hours_6' => 0,
+        ];
+        $this->client->request('POST', '/contract/save', $parameter);
+        $this->assertStatusCode(406);
+        $this->assertMessage('End date has to be greater than the start date.');
     }
 
     public function testUpdateContractDevNotAllowed()
