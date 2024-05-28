@@ -91,6 +91,16 @@ abstract class BaseTest extends WebTestCase
     }
 
     /**
+     * Creates a new Query builder to use in tests where we do more than ine query
+     */
+    protected function resetQueryBuilder()
+    {
+        $this->queryBuilder = $this->container
+            ->get('doctrine.dbal.default_connection')
+            ->createQueryBuilder();
+    }
+
+    /**
      *  Authenticate the query with credentials from the set-up test projectlader
      */
     protected function logInSession(string $user = 'unittest')
