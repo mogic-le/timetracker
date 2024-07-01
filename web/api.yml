@@ -179,21 +179,16 @@ paths:
                 type: string
                 enum: [Please enter a valid user., Please enter a valid contract start., End date has to be greater than the start date., There is allready an ongoing contract with a closed end in the future., There is more than one open endet contract for the user., ]
                 example: Please enter a valid user.
-        '201':
-          description: OK
-          content:
-            application/json:
-              schema:
-                type: string
-                enum: [New Contract created., New Contract created and old one altered.]
-                example: New Contract created.
         '200':
           description: OK
           content:
             application/json:
               schema:
-                type: string
-                example: Contract was updated.
+                type: array
+                items:
+                  type: integer
+                  example: 1
+                  description: contract-id
 
   /controlling/export/{userid}/{year}/{month}/{project}/{customer}/{billable}:
    get:

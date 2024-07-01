@@ -1124,9 +1124,7 @@ class AdminController extends BaseController
         // when updating a existing contract dont look for other contracts for the user
         if ($contractId) {
             $em->flush();
-            $response = new Response($this->translate('Contract was updated.'));
-            $response->setStatusCode(200);
-            return $response;
+            return new JsonResponse(array($contract->getId()));
         }
 
         // get existing contract for the user
@@ -1161,16 +1159,12 @@ class AdminController extends BaseController
             $contractOld->setEnd($oldContractEndDate->sub(new \DateInterval('P1D')));
             $em->persist((object) $contractOld);
             $em->flush();
-            $response = new Response($this->translate('New contract created and old one altered.'));
-            $response->setStatusCode(201);
-            return $response;
+            return new JsonResponse(array($contract->getId()));
         }
 
         // when no old contract with open or ongoing enddate exist or no old contract exist
         $em->flush();
-        $response = new Response($this->translate('New contract created.'));
-        $response->setStatusCode(201);
-        return $response;
+        return new JsonResponse(array($contract->getId()));
     }
 
     /**
