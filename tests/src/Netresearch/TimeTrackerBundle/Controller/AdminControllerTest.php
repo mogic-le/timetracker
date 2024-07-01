@@ -755,7 +755,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(200);
-        $this->assertJsonStructure([4]);
+        $this->assertJsonStructure([5]);
         $this->queryBuilder
             ->select('*')
             ->from('contracts')
@@ -780,31 +780,6 @@ class AdminControllerTest extends BaseTest
 
     public function testSaveContractActionAlterExistingContract()
     {
-        $values = [
-            'user_id' => '?',
-            'start' => '?',
-            'hours_0' => '?',
-            'hours_1' => '?',
-            'hours_2' => '?',
-            'hours_3' => '?',
-            'hours_4' => '?',
-            'hours_5' => '?',
-            'hours_6' => '?',
-        ];
-        $this->queryBuilder
-            ->insert('contracts')
-            ->values($values)
-            ->setParameter(0, 3)
-            ->setParameter(1, '700-01-01')
-            ->setParameter(2, 1)
-            ->setParameter(3, 2)
-            ->setParameter(4, 3)
-            ->setParameter(5, 4)
-            ->setParameter(6, 5)
-            ->setParameter(7, 5)
-            ->setParameter(8, 5)
-            ->execute();
-
         $parameter = [
             'user_id' => '3', //req
             'start' => '0700-08-01', //req
@@ -820,7 +795,6 @@ class AdminControllerTest extends BaseTest
         $this->assertStatusCode(200);
         $this->assertJsonStructure([5]);
         // look at old contract
-        $this->resetQueryBuilder();
         $this->queryBuilder
             ->select('*')
             ->from('contracts')
@@ -863,7 +837,7 @@ class AdminControllerTest extends BaseTest
             'hours_6' => 1,
         ];
         $this->client->request('POST', '/contract/save', $parameterContract1);
-        $this->assertJsonStructure([4]);
+        $this->assertJsonStructure([5]);
         $this->assertStatusCode(200);
         $this->client->request('POST', '/contract/save', $parameterContract2);
         $this->assertStatusCode(406);
@@ -872,30 +846,6 @@ class AdminControllerTest extends BaseTest
 
     public function testSaveContractActionOldContractStartsInFuture()
     {
-        $values = [
-            'user_id' => '?',
-            'start' => '?',
-            'hours_0' => '?',
-            'hours_1' => '?',
-            'hours_2' => '?',
-            'hours_3' => '?',
-            'hours_4' => '?',
-            'hours_5' => '?',
-            'hours_6' => '?',
-        ];
-        $this->queryBuilder
-            ->insert('contracts')
-            ->values($values)
-            ->setParameter(0, 3)
-            ->setParameter(1, '1000-01-01')
-            ->setParameter(2, 1)
-            ->setParameter(3, 2)
-            ->setParameter(4, 3)
-            ->setParameter(5, 4)
-            ->setParameter(6, 5)
-            ->setParameter(7, 5)
-            ->setParameter(8, 5)
-            ->execute();
         $parameterContract = [
             'user_id' => '3', //req
             'start' => '500-01-01', //req
@@ -916,42 +866,20 @@ class AdminControllerTest extends BaseTest
     {
         // put second open ended contract in the database using sql query, otherwise null date gets changed and we can test the error
         $values = [
-            'user_id' => '?',
-            'start' => '?',
-            'hours_0' => '?',
-            'hours_1' => '?',
-            'hours_2' => '?',
-            'hours_3' => '?',
-            'hours_4' => '?',
-            'hours_5' => '?',
-            'hours_6' => '?',
+            'user_id' => '3',
+            'start' =>  "'2020-04-01'",
+            'hours_0' => '1',
+            'hours_1' => '2',
+            'hours_2' => '3',
+            'hours_3' => '4',
+            'hours_4' => '5',
+            'hours_5' => '5',
+            'hours_6' => '5',
         ];
+
         $this->queryBuilder
             ->insert('contracts')
             ->values($values)
-            ->setParameter(0, 3)
-            ->setParameter(1, '2020-01-01')
-            ->setParameter(2, 1)
-            ->setParameter(3, 2)
-            ->setParameter(4, 3)
-            ->setParameter(5, 4)
-            ->setParameter(6, 5)
-            ->setParameter(7, 5)
-            ->setParameter(8, 5)
-            ->execute();
-        $this->resetQueryBuilder();
-        $this->queryBuilder
-            ->insert('contracts')
-            ->values($values)
-            ->setParameter(0, 3)
-            ->setParameter(1, '2020-04-01')
-            ->setParameter(2, 1)
-            ->setParameter(3, 2)
-            ->setParameter(4, 3)
-            ->setParameter(5, 4)
-            ->setParameter(6, 5)
-            ->setParameter(7, 5)
-            ->setParameter(8, 5)
             ->execute();
 
         $parameter = [
@@ -1162,6 +1090,20 @@ class AdminControllerTest extends BaseTest
         $expectedJson = [
             [
                 'contract' => [
+                    'id' => 4,
+                    'user_id' => 3,
+                    'start' => '0700-01-01',
+                    'hours_0' => 1,
+                    'hours_1' => 2,
+                    'hours_2' => 3,
+                    'hours_3' => 4,
+                    'hours_4' => 5,
+                    'hours_5' => 5,
+                    'hours_6' => 5,
+                ],
+            ],
+            [
+                'contract' => [
                     'id' => 3,
                     'user_id' => 2,
                     'start' => '1020-01-01',
@@ -1209,7 +1151,6 @@ class AdminControllerTest extends BaseTest
         $this->client->request('GET', '/getContracts');
         $this->assertStatusCode(200);
         $this->assertJsonStructure($expectedJson);
-
     }
 
     //-------------- ticketSystems routes ----------------------------------------
