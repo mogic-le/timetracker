@@ -1134,7 +1134,7 @@ class AdminController extends BaseController
 
         // look for contract with ongoing end
         if (array_filter($contractsOld, fn($n) => ($n->getEnd() >= $dateStart))) {
-            $response = new Response($this->translate('There is allready an ongoing contract with a closed end in the future.'));
+            $response = new Response($this->translate('There is already an ongoing contract with a closed end in the future.'));
             $response->setStatusCode(406);
             return $response;
         }
@@ -1151,7 +1151,7 @@ class AdminController extends BaseController
             $contractOld = array_values($contractsOld)[0];
             //check if start date of existing contract is in the future
             if ($contractOld->getStart() >= $dateStart) {
-                $response = new Response($this->translate('There is allready an ongoing contract with start in the future.'));
+                $response = new Response($this->translate('There is already an ongoing contract with start in the future.'));
                 $response->setStatusCode(406);
                 return $response;
             }
@@ -1161,14 +1161,14 @@ class AdminController extends BaseController
             $contractOld->setEnd($oldContractEndDate->sub(new \DateInterval('P1D')));
             $em->persist((object) $contractOld);
             $em->flush();
-            $response = new Response($this->translate('New Contract created and old one altered.'));
+            $response = new Response($this->translate('New contract created and old one altered.'));
             $response->setStatusCode(201);
             return $response;
         }
 
         // when no old contract with open or ongoing enddate exist or no old contract exist
         $em->flush();
-        $response = new Response($this->translate('New Contract created.'));
+        $response = new Response($this->translate('New contract created.'));
         $response->setStatusCode(201);
         return $response;
     }

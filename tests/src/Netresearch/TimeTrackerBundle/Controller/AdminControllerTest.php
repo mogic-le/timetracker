@@ -755,7 +755,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(201);
-        $this->assertMessage('New Contract created.');
+        $this->assertMessage('New contract created.');
         $this->queryBuilder
             ->select('*')
             ->from('contracts')
@@ -818,7 +818,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(201);
-        $this->assertMessage('New Contract created and old one altered.');
+        $this->assertMessage('New contract created and old one altered.');
         // look at old contract
         $this->resetQueryBuilder();
         $this->queryBuilder
@@ -863,11 +863,11 @@ class AdminControllerTest extends BaseTest
             'hours_6' => 1,
         ];
         $this->client->request('POST', '/contract/save', $parameterContract1);
-        $this->assertMessage('New Contract created.');
+        $this->assertMessage('New contract created.');
         $this->assertStatusCode(201);
         $this->client->request('POST', '/contract/save', $parameterContract2);
         $this->assertStatusCode(406);
-        $this->assertMessage('There is allready an ongoing contract with a closed end in the future.');
+        $this->assertMessage('There is already an ongoing contract with a closed end in the future.');
     }
 
     public function testSaveContractActionOldContractStartsInFuture()
@@ -909,7 +909,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameterContract);
         $this->assertStatusCode(406);
-        $this->assertMessage('There is allready an ongoing contract with start in the future.');
+        $this->assertMessage('There is already an ongoing contract with start in the future.');
     }
 
     public function testSaveContractActionMultipleOpenEndedContracts()
