@@ -743,8 +743,8 @@ class AdminControllerTest extends BaseTest
     public function testSaveContractAction()
     {
         $parameter = [
-            'user_id' => '3', //req
-            'start' => '2019-11-01', //req
+            'user_id' => '1', //req
+            'start' => '2025-11-01', //req
             'hours_0' => 1,
             'hours_1' => 2,
             'hours_2' => 3,
@@ -760,12 +760,12 @@ class AdminControllerTest extends BaseTest
             ->select('*')
             ->from('contracts')
             ->where('start = ?')
-            ->setParameter(0, '2019-11-01');
+            ->setParameter(0, '2025-11-01');
         $result = $this->queryBuilder->execute()->fetchAll();
         $expectedDbEntry = array(
             0 => array(
-                'user_id' => 3,
-                'start' => '2019-11-01',
+                'user_id' => 1,
+                'start' => '2025-11-01',
                 'hours_0' => 1.0,
                 'hours_1' => 2.0,
                 'hours_2' => 3.0,
