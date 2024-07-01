@@ -1045,7 +1045,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(406);
-        $this->assertMessage('Please enter a valid user.');
+        $this->assertMessage($this->getTrans('Please enter a valid user.'));
     }
 
     public function testCreateContractNoEntry()
@@ -1083,7 +1083,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(406);
-        $this->assertMessage('Please enter a valid contract start.');
+        $this->assertMessage($this->getTrans('Please enter a valid contract start.'));
     }
 
     public function testCreateContractGreaterStartThenEnd()
@@ -1102,7 +1102,7 @@ class AdminControllerTest extends BaseTest
         ];
         $this->client->request('POST', '/contract/save', $parameter);
         $this->assertStatusCode(406);
-        $this->assertMessage('End date has to be greater than the start date.');
+        $this->assertMessage($this->getTrans('End date has to be greater than the start date.'));
     }
 
     public function testUpdateContractDevNotAllowed()

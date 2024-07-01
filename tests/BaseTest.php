@@ -16,6 +16,7 @@ abstract class BaseTest extends WebTestCase
     protected $connection;
     protected $queryBuilder;
     protected $filepath = '/../sql/unittest/002_testdata.sql';
+    private $_translator;
 
     /**
      * The inital state of a table
@@ -58,6 +59,8 @@ abstract class BaseTest extends WebTestCase
         $this->logInSession();
         //
         $this->loadTestData();
+
+        $this->_getTranslator();
     }
 
     /**
@@ -169,5 +172,15 @@ abstract class BaseTest extends WebTestCase
             }
         }
         $this->assertSame($length, count($response));
+    }
+
+    private function _getTranslator()
+    {
+        $this->_translator = $this->container->get('translator');
+    }
+
+    protected function getTrans($message)
+    {
+        return $this->_translator->trans($message);
     }
 }
