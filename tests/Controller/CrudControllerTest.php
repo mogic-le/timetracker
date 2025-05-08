@@ -90,7 +90,7 @@ class CrudControllerTest extends AbstractWebTestCase
         // Try to delete again and expect 404
         $this->client->request('POST', '/tracking/delete', $deleteParam);
         $this->assertStatusCode(404);
-        $this->assertJsonStructure(['message' => 'No entry for id.']);
+        $this->assertJsonStructure(['message' => 'Kein Eintrag für ID.']);
     }
 
     //-------------- Bulkentry routes ----------------------------------------
