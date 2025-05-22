@@ -169,7 +169,7 @@ class LdapClient
 
         $ldapEntry = $collection->getFirst();
         if ($this->logger) {
-            $returnedDn = $ldapEntry['distinguishedname'][0] ?? ($ldapEntry['dn'][0] ?? 'N/A');
+            $returnedDn = $ldapEntry['distinguishedname'][0] ?? ($ldapEntry['dn'] ?? 'N/A');
             $this->logger->info('LDAP: User found.', [
                 'dn_returned' => $returnedDn,
                 'cn' => $ldapEntry['cn'][0] ?? 'N/A',
@@ -191,7 +191,7 @@ class LdapClient
      */
     protected function verifyPassword(array $ldapEntry): bool
     {
-        $userDn = $ldapEntry['distinguishedname'][0] ?? ($ldapEntry['dn'][0] ?? null);
+        $userDn = $ldapEntry['distinguishedname'][0] ?? ($ldapEntry['dn'] ?? null);
         if (!$userDn) {
              if ($this->logger) {
                 $this->logger->error('LDAP: Could not extract DN or distinguishedName from user entry.', ['entry' => $ldapEntry]);
