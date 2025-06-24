@@ -4,7 +4,7 @@
         "Read more about it at https://getcomposer.org/doc/01-basic-usage.md#installing-dependencies",
         "This file is @generated automatically"
     ],
-    "content-hash": "3a9346f29ea7908de52427b6b8c8e342",
+    "content-hash": "149f82f9b20db0c18f730709612b7daa",
     "packages": [
         {
             "name": "clue/stream-filter",
@@ -11924,16 +11924,16 @@
         },
         {
             "name": "symfony/phpunit-bridge",
-            "version": "v7.2.0",
+            "version": "7.2.x-dev",
             "source": {
                 "type": "git",
                 "url": "https://github.com/symfony/phpunit-bridge.git",
-                "reference": "2bbde92ab25a0e2c88160857af7be9db5da0d145"
+                "reference": "860206b88792463da3bb64763c224c29ddbe9729"
             },
             "dist": {
                 "type": "zip",
-                "url": "https://api.github.com/repos/symfony/phpunit-bridge/zipball/2bbde92ab25a0e2c88160857af7be9db5da0d145",
-                "reference": "2bbde92ab25a0e2c88160857af7be9db5da0d145",
+                "url": "https://api.github.com/repos/symfony/phpunit-bridge/zipball/860206b88792463da3bb64763c224c29ddbe9729",
+                "reference": "860206b88792463da3bb64763c224c29ddbe9729",
                 "shasum": ""
             },
             "require": {
@@ -11947,6 +11947,7 @@
                 "symfony/error-handler": "^5.4|^6.4|^7.0",
                 "symfony/polyfill-php81": "^1.27"
             },
+            "default-branch": true,
             "bin": [
                 "bin/simple-phpunit"
             ],
@@ -11985,8 +11986,11 @@
             ],
             "description": "Provides utilities for PHPUnit, especially user deprecation notices management",
             "homepage": "https://symfony.com",
+            "keywords": [
+                "testing"
+            ],
             "support": {
-                "source": "https://github.com/symfony/phpunit-bridge/tree/v7.2.0"
+                "source": "https://github.com/symfony/phpunit-bridge/tree/7.2"
             },
             "funding": [
                 {
@@ -12002,7 +12006,7 @@
                     "type": "tidelift"
                 }
             ],
-            "time": "2024-11-13T16:15:23+00:00"
+            "time": "2025-06-04T10:08:59+00:00"
         },
         {
             "name": "symfony/process",
@@ -12488,7 +12492,9 @@
     ],
     "aliases": [],
     "minimum-stability": "stable",
-    "stability-flags": {},
+    "stability-flags": {
+        "symfony/phpunit-bridge": 20
+    },
     "prefer-stable": false,
     "prefer-lowest": false,
     "platform": {

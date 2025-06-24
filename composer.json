@@ -74,7 +74,7 @@
     "symfony/css-selector": "4.4.*",
     "symfony/debug-bundle": "^4.4",
     "symfony/maker-bundle": "^1.39",
-    "symfony/phpunit-bridge": "^7.2",
+    "symfony/phpunit-bridge": "7.2.x-dev",
     "symfony/web-profiler-bundle": "^4.4",
     "symfony/webpack-encore-bundle": "^1.0",
     "vimeo/psalm": "^4.30"
