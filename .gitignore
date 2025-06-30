@@ -24,8 +24,11 @@ yarn-error.log
 /.env.local
 /.env.local.php
 /.env.*.local
+/config/packages/sentry.yaml
 /config/secrets/prod/prod.decrypt.private.php
+/public/custom
 /public/bundles/
+/public/timalytics
 /var/
 /vendor/
 ###< symfony/framework-bundle ###
