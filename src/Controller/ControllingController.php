@@ -60,12 +60,14 @@ class ControllingController extends BaseController
             return $this->getFailedLoginResponse();
         }
 
-        $projectId    = (int)  $request->query->get('project');
-        $userId       = (int)  $request->query->get('userid');
-        $year         = (int)  $request->query->get('year');
-        $month        = (int)  $request->query->get('month');
-        $customerId   = (int)  $request->query->get('customer');
-        $onlyBillable = (bool) $request->query->get('billable');
+        # This way we avoid breaking backwards compatibility
+        $requestData = $request->attributes->all() ?? $request->query->all();
+        $projectId    = (int)  $requestData['project'];
+        $userId       = (int)  $requestData['userid'];
+        $year         = (int)  $requestData['year'];
+        $month        = (int)  $requestData['month'];
+        $customerId   = (int)  $requestData['customer'];
+        $onlyBillable = (bool) $requestData['billable'];
         $showTicketTitles = (bool) $request->query->get('tickettitles');
 
         $service = $this->export;
