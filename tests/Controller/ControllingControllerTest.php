@@ -37,19 +37,17 @@ class ControllingControllerTest extends AbstractWebTestCase
         // Make sure we're logged in as unittest user (ID 1)
         $this->logInSession('unittest');
 
-        // Request the export URL with required parameters
+        $userId = 1;
+        $year = 2023;
+        $month = 6;
+        $projectId = 0;
+        $customerId = 0;
+        $billable = 0;
+        $tickettitles = 0;
+
         $this->client->request(
             'GET',
-            '/controlling/export',
-            [
-                'year' => 2023,
-                'month' => 6,
-                'userid' => 1,
-                'project' => 0,
-                'customer' => 0,
-                'billable' => 0,
-                'tickettitles' => 0
-            ]
+            "/controlling/export/$userId/$year/$month/$projectId/$customerId/$billable?tickettitles=$tickettitles"
         );
 
         // Check the response status code
@@ -195,18 +193,17 @@ class ControllingControllerTest extends AbstractWebTestCase
         $this->loadTestData('/../sql/unittest/002_testdata.sql');
         $this->logInSession('unittest');
 
+        $userId = 1;
+        $year = 2023;
+        $month = 10;
+        $projectId = 0;
+        $customerId = 0;
+        $billable = 1;
+        $tickettitles = 1;
+
         $this->client->request(
             'GET',
-            '/controlling/export',
-            [
-                'year' => 2023,
-                'month' => 10,
-                'userid' => 1,
-                'project' => 0,
-                'customer' => 0,
-                'billable' => 1,
-                'tickettitles' => 1
-            ]
+            "/controlling/export/$userId/$year/$month/$projectId/$customerId/$billable?tickettitles=$tickettitles"
         );
 
         // 5. Assertions
@@ -239,18 +236,17 @@ class ControllingControllerTest extends AbstractWebTestCase
 
         // Request export without billable/tickettitles parameters explicitly enabled
         // The controller should not add the billable column based on env config
+        $userId = 1;
+        $year = 2023;
+        $month = 6;
+        $projectId = 0;
+        $customerId = 0;
+        $billable = 0;
+        $tickettitles = 0;
+
         $this->client->request(
             'GET',
-            '/controlling/export',
-            [
-                'year' => 2023,
-                'month' => 6,
-                'userid' => 1,
-                'project' => 0,
-                'customer' => 0,
-                'billable' => 0,
-                'tickettitles' => 0
-            ]
+            "/controlling/export/$userId/$year/$month/$projectId/$customerId/$billable?tickettitles=$tickettitles"
         );
 
         $this->assertStatusCode(200);
@@ -292,18 +288,17 @@ class ControllingControllerTest extends AbstractWebTestCase
         $this->logInSession('unittest');
 
         // Request export with tickettitles=0
+        $userId = 1;
+        $year = 2023;
+        $month = 6;
+        $projectId = 0;
+        $customerId = 0;
+        $billable = 0;
+        $tickettitles = 0; // Explicitly request NO ticket titles
+
         $this->client->request(
             'GET',
-            '/controlling/export',
-            [
-                'year' => 2023,
-                'month' => 6,
-                'userid' => 1,
-                'project' => 0,
-                'customer' => 0,
-                'billable' => 0,
-                'tickettitles' => 0 // Explicitly request NO ticket titles
-            ]
+            "/controlling/export/$userId/$year/$month/$projectId/$customerId/$billable?tickettitles=$tickettitles"
         );
 
         $this->assertStatusCode(200);
