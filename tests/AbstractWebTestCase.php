@@ -114,6 +114,14 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
                         // If rollback fails, log the error but continue
                         error_log("Transaction rollback failed: " . $e->getMessage());
                     }
+                } else if (method_exists($this->connection, 'isTransactionActive') && $this->connection->isTransactionActive()) {
+                    try {
+                        $this->connection->rollback();
+                    } catch (\Exception $e) {
+                        // If rollback fails, log the error but continue
+                        error_log("Transaction rollback failed: " . $e->getMessage());
+                    }
+
                 }
             }
             // For Doctrine DBAL connections
