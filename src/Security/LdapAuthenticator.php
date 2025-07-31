@@ -18,6 +18,8 @@ use Symfony\Component\Security\Core\User\UserInterface;
 use Symfony\Component\Security\Core\User\UserProviderInterface;
 use Symfony\Component\Security\Guard\Authenticator\AbstractFormLoginAuthenticator;
 use Symfony\Component\Security\Http\Util\TargetPathTrait;
+use Symfony\Component\Security\Core\Exception\AuthenticationException;
+use Symfony\Component\HttpFoundation\Response;
 
 class LdapAuthenticator extends AbstractFormLoginAuthenticator
 {
@@ -178,5 +180,18 @@ class LdapAuthenticator extends AbstractFormLoginAuthenticator
     {
         return true;
     }
-}
 
+    /**
+     * Control what happens when the user hits a secure page but isn't logged in yet.
+     */
+    public function start(Request $request, AuthenticationException $authException = null)
+    {
+        // calls over the api should return 403 and no redirect
+        if($request?->headers?->get('accept') === strtolower('application/json')){
+            return new Response($this->getLoginUrl(), 403);
+        }
+
+        // continue with default behavior for calls not over api
+        return parent::start($request);
+    }
+}
