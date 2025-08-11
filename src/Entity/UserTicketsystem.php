@@ -36,19 +36,19 @@ class UserTicketsystem extends Base
 
 
     /**
-     * @ORM\Column(name="access_token", type="string", length=50)
+     * @ORM\Column(name="accesstoken", type="string", length=50)
      */
     protected $accessToken;
 
 
     /**
-     * @ORM\Column(name="token_secret", type="string", length=50)
+     * @ORM\Column(name="tokensecret", type="string", length=50)
      */
     protected $tokenSecret;
 
 
     /**
-     * @ORM\Column(name="avoid_connection", type="boolean", options={"default"=false})
+     * @ORM\Column(name="avoidconnection", type="boolean", options={"default"=false})
      */
     protected $avoidConnection;
 
