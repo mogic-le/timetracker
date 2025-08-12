@@ -31,9 +31,6 @@ class ControllingControllerTest extends AbstractWebTestCase
 
     public function testExportActionWithLoggedInUser(): void
     {
-        // Load test data to ensure we have entries to export
-        $this->loadTestData('/../sql/unittest/002_testdata.sql');
-
         // Make sure we're logged in as unittest user (ID 1)
         $this->logInSession('unittest');
 
@@ -283,8 +280,6 @@ class ControllingControllerTest extends AbstractWebTestCase
      */
     public function testExportActionHidesTicketTitleWhenNotRequested(): void
     {
-        // Load test data
-        $this->loadTestData('/../sql/unittest/002_testdata.sql');
         $this->logInSession('unittest');
 
         // Request export with tickettitles=0
