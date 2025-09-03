@@ -6,6 +6,7 @@ use App\Entity\User;
 use App\Model\JsonResponse;
 use Symfony\Component\HttpFoundation\Request;
 use Symfony\Component\Security\Core\Security;
+use Symfony\Component\HttpKernel\Profiler\Profiler;
 
 class StatusController extends BaseController
 {
@@ -26,8 +27,12 @@ class StatusController extends BaseController
         return new JsonResponse($this->getStatus());
     }
 
-    public function pageAction(): \Symfony\Component\HttpFoundation\Response
+    public function pageAction(?Profiler $profiler): \Symfony\Component\HttpFoundation\Response
     {
+
+        // disable the profiler in the iframe
+        $profiler?->disable();
+
         $status = $this->getStatus();
 
         return $this->render('status.html.twig', [

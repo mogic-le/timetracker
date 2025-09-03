@@ -53,6 +53,9 @@ services:
     # Alias TranslatorInterface to the translator service
     Symfony\Component\Translation\TranslatorInterface: '@translator'
 
+    # Alias the Profiler so we can disable it for specific routes called in iframes
+    Symfony\Component\HttpKernel\Profiler\Profiler: '@profiler'
+
     # Make core services public if needed for direct access
     Psr\Log\LoggerInterface:
         public: true
