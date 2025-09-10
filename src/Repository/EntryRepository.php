@@ -467,7 +467,7 @@ class EntryRepository extends ServiceEntityRepository
             $sql['ticket']['select'] = "SELECT 'ticket' AS scope, '' AS name, 0 as entries, 0 as total, 0 as own, 0 AS estimation";
         }
 
-        $stmt = $connection->query(
+        $stmt = $connection->executeQuery(
             implode(" ", $sql['customer'])
             . ' UNION ' . implode(" ", $sql['project'])
             . ' UNION ' . implode(" ", $sql['activity'])
