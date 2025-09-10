@@ -74,9 +74,9 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
                 $this->connection->beginTransaction();
             }
             // For Doctrine DBAL connections
-            else if (method_exists($this->connection, 'getWrappedConnection')) {
+            else if (method_exists($this->connection, 'getNativeConnection')) {
                 try {
-                    $this->connection->getWrappedConnection()->beginTransaction();
+                    $this->connection->getNativeConnection()->beginTransaction();
                 } catch (\Exception $e) {
                     // If transaction fails, log the error but continue
                     error_log("Transaction begin failed: " . $e->getMessage());
@@ -117,11 +117,11 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
                 }
             }
             // For Doctrine DBAL connections
-            else if (method_exists($this->connection, 'getWrappedConnection')) {
-                $wrappedConnection = $this->connection->getWrappedConnection();
-                if (method_exists($wrappedConnection, 'isTransactionActive') && $wrappedConnection->isTransactionActive()) {
+            else if (method_exists($this->connection, 'getNativeConnection')) {
+                $nativeConnection = $this->connection->getNativeConnection();
+                if (method_exists($nativeConnection, 'isTransactionActive') && $nativeConnection->isTransactionActive()) {
                     try {
-                        $wrappedConnection->rollBack();
+                        $nativeConnection->rollBack();
                     } catch (\Exception $e) {
                         // If rollback fails, log the error but continue
                         error_log("Transaction rollback failed: " . $e->getMessage());
@@ -183,8 +183,8 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
             $connection = $this->serviceContainer->get('doctrine.dbal.default_connection');
 
             // For newer Doctrine DBAL versions
-            if (method_exists($connection->getWrappedConnection(), 'getWrappedResourceHandle')) {
-                $this->connection = $connection->getWrappedConnection()->getWrappedResourceHandle();
+            if (method_exists($connection->getNativeConnection(), 'getWrappedResourceHandle')) {
+                $this->connection = $connection->getNativeConnection()->getWrappedResourceHandle();
                 $this->connection->multi_query($file);
             } else {
                 // For newer Doctrine versions that don't expose the resource handle
@@ -423,8 +423,8 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
             $this->queryBuilder = $connection->createQueryBuilder();
 
             // Also make sure $this->connection is properly initialized
-            if (method_exists($connection->getWrappedConnection(), 'getWrappedResourceHandle')) {
-                $this->connection = $connection->getWrappedConnection()->getWrappedResourceHandle();
+            if (method_exists($connection->getNativeConnection(), 'getWrappedResourceHandle')) {
+                $this->connection = $connection->getNativeConnection()->getWrappedResourceHandle();
             } else {
                 $this->connection = $connection;
             }
