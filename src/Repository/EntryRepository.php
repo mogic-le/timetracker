@@ -340,9 +340,12 @@ class EntryRepository extends ServiceEntityRepository
         $sql['where_user'] = 'AND user_id = :userId';
         $sql['order'] = "ORDER BY day DESC, start DESC";
 
-        // Modified: Use prepare and executeQuery with parameters
+        // Modified: Use prepare and bind parameters, then executeQuery
         $stmt = $connection->prepare(implode(" ", $sql));
-        $result = $stmt->executeQuery($params)->fetchAllAssociative(); // Use fetchAllAssociative for DBAL 3+
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $result = $stmt->executeQuery()->fetchAllAssociative(); // Use fetchAllAssociative for DBAL 3+
 
         $data = [];
         if (count($result)) {
@@ -521,9 +524,12 @@ class EntryRepository extends ServiceEntityRepository
             break;
         }
 
-        // Modified: Use prepare and executeQuery with parameters
+        // Modified: Use prepare and bind parameters, then executeQuery
         $stmt = $connection->prepare(implode(" ", $sql));
-        $result = $stmt->executeQuery($params)->fetchAllAssociative(); // Use fetchAllAssociative for DBAL 3+
+        foreach ($params as $key => $value) {
+            $stmt->bindValue($key, $value);
+        }
+        $result = $stmt->executeQuery()->fetchAllAssociative(); // Use fetchAllAssociative for DBAL 3+
 
         // Original code returned false for count, keeping that behavior
         return [
