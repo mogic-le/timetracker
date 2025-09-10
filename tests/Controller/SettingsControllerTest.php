@@ -33,7 +33,7 @@ class SettingsControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('*')
             ->from('users')->where('id = :userId')
             ->setParameter('userId', 1);
-        $result = $this->queryBuilder->execute()->fetchAllAssociative();
+        $result = $this->queryBuilder->executeQuery()->fetchAllAssociative();
         $expectedDbEntry = [
             0 => [
                 'username' => 'i.myself',

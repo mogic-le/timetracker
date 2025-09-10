@@ -70,7 +70,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('*')
             ->from('users')->where('id = ?')
             ->setParameter(0, 1);
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'id' => 1,
@@ -117,7 +117,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->setParameter(0, 42)
             ->setParameter(1, 'userForDeletetion')
             ->setParameter(2, 'DEV')
-            ->execute();
+            ->executeQuery();
         //Use ID of 42 to avoid problems when adding a new user for testing
         $parameter = ['id' => 42,];
         $expectedJson1 = [
@@ -261,7 +261,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'lead_user_id')
             ->from('teams')->where('name = ?')
             ->setParameter(0, 'testSaveTeamAction');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
 
         $expectedDbEntry = [
             [
@@ -306,7 +306,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'lead_user_id')
             ->from('teams')->where('id = ?')
             ->setParameter(0, 1);
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             [
                 'name' => 'updatedKuchenbäcker',
@@ -354,7 +354,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->leftJoin('c', 'teams_customers', 'tc', 'c.id = tc.customer_id')
             ->where('c.name = ?')
             ->setParameter(0, 'testCustomer');
-        $result1 = $this->queryBuilder->execute()->fetchAll();
+        $result1 = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             [
                 'name' => 'testCustomer',
@@ -399,7 +399,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->leftJoin('c', 'teams_customers', 'tc', 'c.id = tc.customer_id')
             ->where('c.id = ?')
             ->setParameter(0, 1);
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             [
                 'name' => 'updatedTestCustomer',
@@ -437,7 +437,7 @@ class AdminControllerTest extends AbstractWebTestCase
             )
             ->setParameter(0, 42)
             ->setParameter(1, 'customerForDeletion')
-            ->execute();
+            ->executeQuery();
         //Use ID of 42 to avoid problems when adding a new customer for testing
         $parameter = ['id' => 42,];
 
@@ -518,7 +518,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'customer_id')
             ->from('projects')->where('name = ?')
             ->setParameter(0, 'testProject');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
 
         $expectedDbEntry = [
             [
@@ -563,7 +563,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'customer_id')
             ->from('projects')->where('id = ?')
             ->setParameter(0, 1);
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             [
                 'name' => 'updatedTestProject',
@@ -636,7 +636,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'factor')
             ->from('activities')->where('name = ?')
             ->setParameter(0, 'Lachen');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
 
         $expectedDbEntry = [
             [
@@ -679,7 +679,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('name', 'factor')
             ->from('activities')->where('name = ?')
             ->setParameter(0, 'update');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'name' => 'update',
@@ -719,7 +719,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->setParameter(0, 42)
             ->setParameter(1, 'activityForDeletion')
             ->setParameter(2, '1')
-            ->execute();
+            ->executeQuery();
         //Use ID of 42 to avoid problems when adding a new activity for testing
         $parameter = ['id' => 42];
         $expectedJson1 = [
@@ -771,7 +771,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '2025-11-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 1,
@@ -792,7 +792,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '2020-02-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 1,
@@ -827,7 +827,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '2025-11-11');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 1,
@@ -848,7 +848,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '2020-02-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 1,
@@ -884,7 +884,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '0700-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 3,
@@ -1212,7 +1212,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '0700-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 3,
@@ -1249,7 +1249,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '1020-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 2,
@@ -1286,7 +1286,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '1020-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 2,
@@ -1323,7 +1323,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '700-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 3,
@@ -1359,7 +1359,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '700-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 3,
@@ -1395,7 +1395,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('contracts')
             ->where('start = ?')
             ->setParameter(0, '1020-01-01');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'user_id' => 2,
@@ -1426,7 +1426,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder
             ->insert('contracts')
             ->values($values)
-            ->execute();
+            ->executeQuery();
 
         $parameter = [
             'user_id' => '3', //req
@@ -1493,7 +1493,7 @@ class AdminControllerTest extends AbstractWebTestCase
         $this->queryBuilder->select('*')
             ->from('contracts')->where('id = ?')
             ->setParameter(0, 1);
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             [
                 'user_id' => 3,
@@ -1746,7 +1746,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('ticket_systems')
             ->where('name = ?')
             ->setParameter(0, 'testSaveTicketSystem');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'name' => 'testSaveTicketSystem',
@@ -1799,7 +1799,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('ticket_systems')
             ->where('name = ?')
             ->setParameter(0, 'testSaveTicketSystemUpdate');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'name' => 'testSaveTicketSystemUpdate',
@@ -1903,7 +1903,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('presets')
             ->where('name = ?')
             ->setParameter(0, 'newPreset');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'name' => 'newPreset',
@@ -1958,7 +1958,7 @@ class AdminControllerTest extends AbstractWebTestCase
             ->from('presets')
             ->where('name = ?')
             ->setParameter(0, 'newPresetUpdated');
-        $result = $this->queryBuilder->execute()->fetchAll();
+        $result = $this->queryBuilder->executeQuery()->fetchAll();
         $expectedDbEntry = [
             0 => [
                 'name' => 'newPresetUpdated',

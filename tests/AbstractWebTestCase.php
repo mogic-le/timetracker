@@ -146,7 +146,7 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
         $this->tableInitialState = $this->queryBuilder
             ->select('*')
             ->from($tableName)
-            ->execute()
+            ->executeQuery()
             ->fetchAllAssociative();
     }
 
@@ -158,7 +158,7 @@ abstract class AbstractWebTestCase extends SymfonyWebTestCase
         $newTableState = $this->queryBuilder
             ->select('*')
             ->from($tableName)
-            ->execute()
+            ->executeQuery()
             ->fetchAllAssociative();
         $this->assertSame($this->tableInitialState, $newTableState);
         $this->tableInitialState = null;
