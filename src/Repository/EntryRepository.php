@@ -473,7 +473,7 @@ class EntryRepository extends ServiceEntityRepository
             . ' UNION ' . implode(" ", $sql['activity'])
             . ' UNION ' . implode(" ", $sql['ticket'])
         );
-        $result = $stmt->fetchAll(\PDO::FETCH_ASSOC);
+        $result = $stmt->fetchAllAssociative();
 
         $data['customer']   = $result[0];
         $data['project']    = $result[1];
