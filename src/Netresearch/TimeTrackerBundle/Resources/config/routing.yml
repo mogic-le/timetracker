@@ -254,3 +254,19 @@ jiraOAuthCallback:
 syncEntriesToJira:
     path: /syncentries/jira
     defaults: { _controller: NetresearchTimeTrackerBundle:Admin:jiraSyncEntries }
+
+_getAllHolidays:
+    path: /getAllHolidays
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:getHolidays }
+
+saveHoliday:
+    path: /holiday/save
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:saveHoliday }
+
+deleteHoliday:
+    path: /holiday/delete
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:deleteHoliday }
+
+importHolidaysFromIcal:
+    path: /holiday/import-ical
+    defaults: { _controller: NetresearchTimeTrackerBundle:Admin:importHolidaysFromIcal }

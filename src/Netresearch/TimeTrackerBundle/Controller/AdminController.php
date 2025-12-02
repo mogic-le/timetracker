@@ -1261,4 +1261,266 @@ class AdminController extends BaseController
         return new JsonResponse(array('success' => true));
     }
 
+    /**
+     * Get all holidays for admin interface
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function getHolidaysAction(Request $request)
+    {
+        if (!$this->checkLogin($request)) {
+            return $this->getFailedLoginResponse();
+        }
+
+        /** @var \Netresearch\TimeTrackerBundle\Repository\HolidayRepository $repo */
+        $repo = $this->getDoctrine()->getRepository('NetresearchTimeTrackerBundle:Holiday');
+
+        return new JsonResponse($repo->getAllHolidays());
+    }
+
+    /**
+     * Save or update a holiday
+     *
+     * @param Request $request
+     * @return Response
+     */
+    public function saveHolidayAction(Request $request)
+    {
+        if (false === $this->isPl($request)) {
+            return $this->getFailedAuthorizationResponse();
+        }
+
+        $day = $request->get('day');
+        $name = $request->get('name');
+        $originalDay = $request->get('original_day');
+
+        if (empty($day) || empty($name)) {
+            $response = new Response($this->translate('Please enter a valid date and name.'));
+            $response->setStatusCode(406);
+            return $response;
+        }
+
+        $dateDay = \DateTime::createFromFormat('Y-m-d', $day);
+        if (!$dateDay) {
+            $response = new Response($this->translate('Please enter a valid date (YYYY-MM-DD).'));
+            $response->setStatusCode(406);
+            return $response;
+        }
+        $dateDay->setTime(0, 0, 0);
+
+        $doctrine = $this->getDoctrine();
+        $em = $doctrine->getManager();
+
+        /** @var \Netresearch\TimeTrackerBundle\Repository\HolidayRepository $repo */
+        $repo = $doctrine->getRepository('NetresearchTimeTrackerBundle:Holiday');
+
+        // If original_day is set, we're editing an existing holiday
+        if ($originalDay) {
+            $originalDate = \DateTime::createFromFormat('Y-m-d', $originalDay);
+            if ($originalDate) {
+                $originalDate->setTime(0, 0, 0);
+                $existingHoliday = $repo->findByDay($originalDate);
+                if ($existingHoliday) {
+                    // If the date changed, we need to delete the old and create new
+                    if ($originalDay !== $day) {
+                        $em->remove($existingHoliday);
+                        $em->flush();
+                    } else {
+                        // Just update the name
+                        $existingHoliday->setName($name);
+                        $em->flush();
+                        return new JsonResponse(['success' => true]);
+                    }
+                }
+            }
+        }
+
+        // Check if a holiday already exists for this date
+        $existingHoliday = $repo->findByDay($dateDay);
+        if ($existingHoliday) {
+            $existingHoliday->setName($name);
+        } else {
+            $holiday = new \Netresearch\TimeTrackerBundle\Entity\Holiday($dateDay, $name);
+            $em->persist($holiday);
+        }
+
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    /**
+     * Delete a holiday
+     *
+     * @param Request $request
+     * @return Response|Error
+     */
+    public function deleteHolidayAction(Request $request)
+    {
+        if (false === $this->isPl($request)) {
+            return $this->getFailedAuthorizationResponse();
+        }
+
+        $day = $request->get('day');
+
+        if (empty($day)) {
+            return new Error($this->translate('Please provide a valid date.'), 406);
+        }
+
+        $dateDay = \DateTime::createFromFormat('Y-m-d', $day);
+        if (!$dateDay) {
+            return new Error($this->translate('Please enter a valid date (YYYY-MM-DD).'), 406);
+        }
+        $dateDay->setTime(0, 0, 0);
+
+        $doctrine = $this->getDoctrine();
+        $em = $doctrine->getManager();
+
+        /** @var \Netresearch\TimeTrackerBundle\Repository\HolidayRepository $repo */
+        $repo = $doctrine->getRepository('NetresearchTimeTrackerBundle:Holiday');
+
+        $holiday = $repo->findByDay($dateDay);
+        if (!$holiday) {
+            return new Error($this->translate('Holiday not found.'), 404);
+        }
+
+        $em->remove($holiday);
+        $em->flush();
+
+        return new JsonResponse(['success' => true]);
+    }
+
+    /**
+     * Import holidays from iCal URL
+     *
+     * @param Request $request
+     * @return Response|Error
+     */
+    public function importHolidaysFromIcalAction(Request $request)
+    {
+        if (false === $this->isPl($request)) {
+            return $this->getFailedAuthorizationResponse();
+        }
+
+        $icalUrl = $request->get('ical_url');
+        $icalFile = $request->files->get('ical_file');
+
+        $icalContent = null;
+
+        // Check for file upload first
+        if ($icalFile && $icalFile->isValid()) {
+            $icalContent = file_get_contents($icalFile->getPathname());
+            if ($icalContent === false) {
+                return new Error($this->translate('Could not read uploaded file.'), 400);
+            }
+        } elseif (!empty($icalUrl)) {
+            // Fetch iCal content from URL
+            $icalContent = @file_get_contents($icalUrl);
+            if ($icalContent === false) {
+                return new Error($this->translate('Could not fetch iCal data from URL.'), 400);
+            }
+        } else {
+            return new Error($this->translate('Please provide a valid iCal URL or upload a file.'), 406);
+        }
+
+        // Parse iCal content
+        $events = $this->parseIcal($icalContent);
+
+        if (empty($events)) {
+            return new Error($this->translate('No events found in iCal data.'), 400);
+        }
+
+        $doctrine = $this->getDoctrine();
+        $em = $doctrine->getManager();
+
+        /** @var \Netresearch\TimeTrackerBundle\Repository\HolidayRepository $repo */
+        $repo = $doctrine->getRepository('NetresearchTimeTrackerBundle:Holiday');
+
+        $imported = 0;
+        $updated = 0;
+
+        foreach ($events as $date => $title) {
+            $existingHoliday = $repo->findByDay($date);
+            if ($existingHoliday) {
+                $existingHoliday->setName($title);
+                $updated++;
+            } else {
+                $holiday = new \Netresearch\TimeTrackerBundle\Entity\Holiday($date, $title);
+                $em->persist($holiday);
+                $imported++;
+            }
+        }
+
+        $em->flush();
+
+        return new JsonResponse([
+            'success' => true,
+            'imported' => $imported,
+            'updated' => $updated,
+            'total' => count($events)
+        ]);
+    }
+
+    /**
+     * Parse iCal content and extract events
+     *
+     * @param string $icalContent
+     * @return array
+     */
+    private function parseIcal($icalContent)
+    {
+        $events = [];
+
+        // Normalize line endings and handle iCal line folding
+        // Lines starting with space or tab are continuations of the previous line
+        $icalContent = str_replace("\r\n", "\n", $icalContent);
+        $icalContent = str_replace("\r", "\n", $icalContent);
+        $icalContent = preg_replace('/\n[ \t]/', '', $icalContent);
+
+        $lines = explode("\n", $icalContent);
+        $inEvent = false;
+        $currentEvent = [];
+
+        foreach ($lines as $line) {
+            $line = trim($line);
+
+            if ($line === 'BEGIN:VEVENT') {
+                $inEvent = true;
+                $currentEvent = [];
+                continue;
+            }
+
+            if (!$inEvent) {
+                continue;
+            }
+
+            if ($line === 'END:VEVENT') {
+                $inEvent = false;
+                if (isset($currentEvent['date']) && isset($currentEvent['title'])) {
+                    $events[$currentEvent['date']] = $currentEvent['title'];
+                }
+                continue;
+            }
+
+            if (strpos($line, 'DTSTART;VALUE=DATE:') === 0) {
+                $date = substr($line, 19);
+                $currentEvent['date'] = substr($date, 0, 4)
+                    . '-' . substr($date, 4, 2)
+                    . '-' . substr($date, 6, 2);
+            } elseif (strpos($line, 'DTSTART:') === 0) {
+                // Handle DTSTART without VALUE=DATE (datetime format)
+                $date = substr($line, 8);
+                $currentEvent['date'] = substr($date, 0, 4)
+                    . '-' . substr($date, 4, 2)
+                    . '-' . substr($date, 6, 2);
+            } elseif (strpos($line, 'SUMMARY:') === 0) {
+                $currentEvent['title'] = substr($line, 8);
+            }
+        }
+
+        ksort($events);
+        return $events;
+    }
+
 }

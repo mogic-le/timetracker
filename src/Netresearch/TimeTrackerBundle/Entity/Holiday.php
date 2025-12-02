@@ -15,12 +15,13 @@ class Holiday extends Base
 {
     /**
      * @ORM\Id
-     * @ORM\Column(type="date")
+     * @ORM\Column(type="string", length=10)
      */
     private $day;
 
     /**
      * @var string $name
+     * @ORM\Column(type="string", length=31, nullable=true)
      */
     private $name;
 
@@ -34,14 +35,14 @@ class Holiday extends Base
     /**
      * Set day
      *
-     * @param string $day
+     * @param string|\DateTime $day
      *
      * @return $this
      */
     public function setDay($day)
     {
-        if (!$day instanceof \DateTime) {
-            $day = new \DateTime($day);
+        if ($day instanceof \DateTime) {
+            $day = $day->format('Y-m-d');
         }
 
         $this->day = $day;
@@ -51,7 +52,7 @@ class Holiday extends Base
     /**
      * Get day
      *
-     * @return \DateTime
+     * @return string
      */
     public function getDay()
     {
@@ -85,8 +86,13 @@ class Holiday extends Base
      */
     public function toArray()
     {
+        $day = $this->getDay();
+        if ($day) {
+            $dateObj = \DateTime::createFromFormat('Y-m-d', $day);
+            $day = $dateObj ? $dateObj->format('d/m/Y') : $day;
+        }
         return array(
-            'day'         => $this->getDay() ? $this->getDay()->format('d/m/Y') : null,
+            'day'         => $day,
             'description' => $this->getName()
         );
     }

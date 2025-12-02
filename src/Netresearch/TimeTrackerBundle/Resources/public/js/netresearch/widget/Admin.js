@@ -8,7 +8,8 @@ Ext.define('Netresearch.widget.Admin', {
         'Netresearch.store.AdminUsers',
         'Netresearch.store.AdminPresets',
         'Netresearch.store.TicketSystems',
-        'Netresearch.store.AdminContracts'
+        'Netresearch.store.AdminContracts',
+        'Netresearch.store.AdminHolidays'
     ],
 
     /* Load all necessary stores */
@@ -20,6 +21,7 @@ Ext.define('Netresearch.widget.Admin', {
     activityStore: Ext.create('Netresearch.store.Activities'),
     presetStore: Ext.create('Netresearch.store.AdminPresets'),
     contractStore: Ext.create('Netresearch.store.AdminContracts'),
+    holidayStore: Ext.create('Netresearch.store.AdminHolidays'),
 
     /* Strings */
     _tabTitle: 'Administration',
@@ -122,6 +124,20 @@ Ext.define('Netresearch.widget.Admin', {
     _hours4Title: 'Thursday (h)',
     _hours5Title: 'Friday (h)',
     _hours6Title: 'Saturday (h)',
+
+    _holidayManagementTitle: 'Holidays',
+    _addHolidayTitle: 'Add holiday',
+    _editHolidayTitle: 'Edit holiday',
+    _holidaySavedTitle: 'The holiday has been successfully saved.',
+    _holidayDateTitle: 'Date',
+    _holidayNameTitle: 'Name',
+    _importIcalTitle: 'Import from iCal',
+    _icalUrlTitle: 'iCal URL',
+    _orTitle: '— or —',
+    _icalFileTitle: 'Upload file',
+    _importTitle: 'Import',
+    _importSuccessTitle: 'Import successful',
+    _importedHolidaysTitle: 'Imported: %d, Updated: %d',
 
     initComponent: function () {
         this.on('render', this.refreshStores, this);
@@ -2396,6 +2412,272 @@ Ext.define('Netresearch.widget.Admin', {
             }
         });
 
+        var holidayGrid = Ext.create('Ext.grid.Panel', {
+            store: this.holidayStore,
+            columns: [
+                {
+                    header: this._holidayDateTitle,
+                    dataIndex: 'day',
+                    flex: 1,
+                    field: {
+                        xtype: 'textfield'
+                    }
+                }, {
+                    header: this._holidayNameTitle,
+                    dataIndex: 'name',
+                    flex: 2,
+                    field: {
+                        xtype: 'textfield'
+                    }
+                }
+            ],
+            tbar: [
+                {
+                    text: this._addHolidayTitle,
+                    iconCls: 'icon-add',
+                    scope: this,
+                    handler: function() {
+                        holidayGrid.editHoliday();
+                    }
+                }, {
+                    text: this._importIcalTitle,
+                    iconCls: 'icon-add',
+                    scope: this,
+                    handler: function() {
+                        holidayGrid.importIcal();
+                    }
+                }, {
+                    text: this._refreshTitle,
+                    iconCls: 'icon-refresh',
+                    scope: this,
+                    handler: function() {
+                        holidayGrid.refresh();
+                    }
+                }
+            ],
+            listeners: {
+                /* Right-click menu */
+                itemcontextmenu: function(grid, record, item, index, event, options) {
+                    event.stopEvent();
+
+                    var contextMenu = Ext.create('Ext.menu.Menu', {
+                        items: [
+                            {
+                                text: panel._editTitle,
+                                iconCls: 'icon-edit',
+                                scope: this,
+                                handler: function() {
+                                    this.editHoliday(record.data);
+                                }
+                            }, {
+                                text: panel._deleteTitle,
+                                iconCls: 'icon-delete',
+                                scope: this,
+                                handler: function() {
+                                    this.deleteHoliday(record.data);
+                                }
+                            }
+                        ]
+                    });
+
+                    contextMenu.showAt(event.xy);
+                }
+            },
+            editHoliday: function(record) {
+                record = record || {};
+
+                var window = Ext.create('Ext.window.Window', {
+                    title: panel._editHolidayTitle,
+                    modal: true,
+                    width: 400,
+                    layout: 'fit',
+                    id: 'edit-holiday-window',
+                    listeners: {
+                        destroy: {
+                            scope: this,
+                            fn: function() {
+                                this.refresh();
+                            }
+                        }
+                    },
+                    items: [
+                        new Ext.form.Panel({
+                            bodyPadding: 5,
+                            defaultType: 'textfield',
+                            items: [
+                                new Ext.form.field.Hidden({
+                                    name: 'original_day',
+                                    value: record.day ? record.day : ''
+                                }),
+                                new Ext.form.field.Date({
+                                    id: 'holiday-day',
+                                    fieldLabel: panel._holidayDateTitle,
+                                    name: 'day',
+                                    format: 'Y-m-d',
+                                    allowBlank: false,
+                                    value: record.day ? record.day : ''
+                                }),
+                                {
+                                    fieldLabel: panel._holidayNameTitle,
+                                    name: 'name',
+                                    anchor: '100%',
+                                    allowBlank: false,
+                                    value: record.name ? record.name : ''
+                                }
+                            ],
+                            buttons: [
+                                {
+                                    text: panel._saveTitle,
+                                    scope: this,
+                                    handler: function(btn) {
+                                        var form = btn.up('form').getForm();
+                                        if (!form.isValid()) {
+                                            return;
+                                        }
+                                        var values = form.getValues();
+                                        Ext.Ajax.request({
+                                            url: url + 'holiday/save',
+                                            params: values,
+                                            scope: this,
+                                            success: function(response) {
+                                                window.close();
+                                                showNotification(panel._successTitle, panel._holidaySavedTitle, true);
+                                            },
+                                            failure: function(response) {
+                                                var message = response.responseText.length < 200
+                                                    ? response.responseText
+                                                    : panel._seriousErrorTitle;
+                                                showNotification(panel._errorTitle, message, false);
+                                            }
+                                        });
+                                    }
+                                }
+                            ]
+                        })
+                    ]
+                });
+
+                window.show();
+            },
+            deleteHoliday: function(record) {
+                var grid = this;
+                var day = record.day;
+                Ext.Msg.confirm('Achtung', 'Wirklich löschen?<br />' + record.name + ' (' + day + ')', function(btn) {
+                    if (btn == 'yes') {
+                        Ext.Ajax.request({
+                            url: url + 'holiday/delete',
+                            params: {
+                                day: day
+                            },
+                            scope: this,
+                            success: function(response) {
+                                grid.refresh();
+                            },
+                            failure: function(response) {
+                                var data = Ext.decode(response.responseText);
+                                showNotification(panel._errorTitle, data.message, false);
+                            }
+                        });
+                    }
+                });
+            },
+            importIcal: function() {
+                var grid = this;
+
+                var window = Ext.create('Ext.window.Window', {
+                    title: panel._importIcalTitle,
+                    modal: true,
+                    width: 500,
+                    layout: 'fit',
+                    id: 'import-ical-window',
+                    listeners: {
+                        destroy: {
+                            scope: this,
+                            fn: function() {
+                                this.refresh();
+                            }
+                        }
+                    },
+                    items: [
+                        new Ext.form.Panel({
+                            bodyPadding: 5,
+                            defaultType: 'textfield',
+                            items: [
+                                {
+                                    fieldLabel: panel._icalUrlTitle,
+                                    name: 'ical_url',
+                                    anchor: '100%',
+                                    allowBlank: true,
+                                    value: ''
+                                },
+                                {
+                                    xtype: 'displayfield',
+                                    value: panel._orTitle,
+                                    fieldLabel: '',
+                                    style: 'text-align: center; color: #666;',
+                                    anchor: '100%'
+                                },
+                                {
+                                    xtype: 'filefield',
+                                    fieldLabel: panel._icalFileTitle,
+                                    name: 'ical_file',
+                                    anchor: '100%',
+                                    allowBlank: true,
+                                    buttonText: '...'
+                                }
+                            ],
+                            buttons: [
+                                {
+                                    text: panel._importTitle,
+                                    scope: this,
+                                    handler: function(btn) {
+                                        var form = btn.up('form').getForm();
+                                        var values = form.getValues();
+
+                                        // Check if at least one field is filled
+                                        var fileField = form.findField('ical_file');
+                                        var hasFile = fileField && fileField.getValue();
+                                        var hasUrl = values.ical_url && values.ical_url.trim() !== '';
+
+                                        if (!hasFile && !hasUrl) {
+                                            showNotification(panel._errorTitle, panel._icalUrlTitle + ' / ' + panel._icalFileTitle, false);
+                                            return;
+                                        }
+
+                                        form.submit({
+                                            url: url + 'holiday/import-ical',
+                                            scope: this,
+                                            success: function(form, action) {
+                                                var data = action.result;
+                                                var msg = panel._importedHolidaysTitle
+                                                    .replace('%d', data.imported)
+                                                    .replace('%d', data.updated);
+                                                window.close();
+                                                showNotification(panel._importSuccessTitle, msg, true);
+                                            },
+                                            failure: function(form, action) {
+                                                var message = action.response && action.response.responseText
+                                                    && action.response.responseText.length < 200
+                                                    ? action.response.responseText
+                                                    : panel._seriousErrorTitle;
+                                                showNotification(panel._errorTitle, message, false);
+                                            }
+                                        });
+                                    }
+                                }
+                            ]
+                        })
+                    ]
+                });
+
+                window.show();
+            },
+            refresh: function() {
+                this.store.load();
+                this.getView().refresh();
+            }
+        });
+
         /* Create container panels for grids */
         var customerPanel = Ext.create('Ext.panel.Panel', {
             layout: 'fit',
@@ -2477,9 +2759,19 @@ Ext.define('Netresearch.widget.Admin', {
             items: [ contractGrid ]
         });
 
+        var holidayPanel = Ext.create('Ext.panel.Panel', {
+            layout: 'fit',
+            frame: true,
+            title: this._holidayManagementTitle,
+            collapsible: false,
+            width: '100%',
+            margin: '0 0 10 0',
+            items: [ holidayGrid ]
+        });
+
         var config = {
             title: this._tabTitle,
-            items: [ customerPanel, projectPanel, userPanel, teamPanel, presetPanel, ticketSystemPanel, activityPanel, contractPanel ]
+            items: [ customerPanel, projectPanel, userPanel, teamPanel, presetPanel, ticketSystemPanel, activityPanel, contractPanel, holidayPanel ]
         };
 
         /* Apply config */
@@ -2496,6 +2788,7 @@ Ext.define('Netresearch.widget.Admin', {
         this.ticketSystemStore.load();
         this.presetStore.load();
         this.contractStore.load();
+        this.holidayStore.load();
     }
 });
 
@@ -2614,5 +2907,18 @@ if ((undefined != settingsData) && (settingsData['locale'] == 'de')) {
         _hours4Title: 'Donnerstag (h)',
         _hours5Title: 'Freitag (h)',
         _hours6Title: 'Samstag (h)',
+        _holidayManagementTitle: 'Feiertage',
+        _addHolidayTitle: 'Feiertag hinzufügen',
+        _editHolidayTitle: 'Feiertag bearbeiten',
+        _holidaySavedTitle: 'Der Feiertag wurde erfolgreich gespeichert.',
+        _holidayDateTitle: 'Datum',
+        _holidayNameTitle: 'Name',
+        _importIcalTitle: 'Aus iCal importieren',
+        _icalUrlTitle: 'iCal URL',
+        _orTitle: '— oder —',
+        _icalFileTitle: 'Datei hochladen',
+        _importTitle: 'Importieren',
+        _importSuccessTitle: 'Import erfolgreich',
+        _importedHolidaysTitle: 'Importiert: %d, Aktualisiert: %d',
     });
 }
