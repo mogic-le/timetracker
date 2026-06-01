@@ -3,6 +3,7 @@
 namespace Netresearch\TimeTrackerBundle\Services;
 
 use Netresearch\TimeTrackerBundle\Entity\Project;
+use Netresearch\TimeTrackerBundle\Helper\JiraApiUnauthorizedException;
 use Netresearch\TimeTrackerBundle\Helper\JiraOAuthApi;
 use Psr\Container\ContainerInterface;
 
@@ -80,12 +81,21 @@ class SubticketSyncService
         $mainTickets = array_map('trim', explode(',', $mainTickets));
         $allSubtickets = [];
         foreach ($mainTickets as $mainTicket) {
+            try {
+                $subtickets = $jiraOAuthApi->getSubtickets($mainTicket);
+            } catch (JiraApiUnauthorizedException $e) {
+                //enrich exception with user name
+                throw new JiraApiUnauthorizedException(
+                    $e->getMessage() . ' - user ' . $userWithJiraAccess->getUsername(),
+                    $e->getCode(),
+                    $e->getRedirectUrl(),
+                    $e
+                );
+            }
             //we want to make it easy to find matching tickets,
             // so we put the main ticket in the subticket list as well
             $allSubtickets[] = $mainTicket;
-            $allSubtickets = array_merge(
-                $allSubtickets, $jiraOAuthApi->getSubtickets($mainTicket)
-            );
+            $allSubtickets = array_merge($allSubtickets, $subtickets);
         }
         natcasesort($allSubtickets);
 
