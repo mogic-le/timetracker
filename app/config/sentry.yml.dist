@@ -5,3 +5,12 @@ sentry:
   dsn: ""
   tracing:
     enabled: false
+  options:
+    integrations:
+      - 'Sentry\Integration\IgnoreErrorsIntegration'
+services:
+  Sentry\Integration\IgnoreErrorsIntegration:
+    arguments:
+      $options:
+        ignore_exceptions:
+          - 'Symfony\Component\HttpKernel\Exception\NotFoundHttpException'
